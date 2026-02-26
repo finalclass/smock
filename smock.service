@@ -1,0 +1,25 @@
+[Unit]
+Description=smock (well app)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/srv/smock
+ExecStart=/srv/smock/bin/smock
+Restart=on-failure
+RestartSec=3
+
+EnvironmentFile=/srv/smock/.env
+
+# Hardening
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/srv/smock/data
+PrivateTmp=yes
+
+# Allow binding to privileged ports (443, 80)
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target

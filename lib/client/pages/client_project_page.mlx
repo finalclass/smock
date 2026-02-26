@@ -1,0 +1,30 @@
+Well.get "/p/:token" @@ fun req ->
+let open Html in
+let ctx = Well.rpc_ctx req in
+let token = Well.param req "token" in
+let project = Project_access.get_by_token ~ctx ~token in
+let mocks_result = Mock_access.list_by_project ~ctx ~project_id:project.id in
+let visible_mocks = List.filter (fun (m : Mock_access.Mock.t) -> m.status <> "draft") mocks_result.mocks in
+<Client_layout title=(project.name ^ " — Smock")>
+<div class_="client-project">
+  <header class_="client-header">
+    <h1>(txt project.name)</h1>
+  </header>
+  (match visible_mocks with
+   | [] -> <p class_="empty-state">(txt "No mockups available yet.")</p>
+   | mocks ->
+     <div class_="mock-grid">
+       (mocks |> List.map (fun (m : Mock_access.Mock.t) ->
+         <a href=("/p/" ^ token ^ "/" ^ m.slug) class_="mock-tile">
+           <div class_="mock-tile-preview">
+             <div class_="mock-tile-placeholder">(txt (String.sub m.name 0 (min 2 (String.length m.name))))</div>
+           </div>
+           <div class_="mock-tile-info">
+             <h3>(txt m.name)</h3>
+             <span class_=("status status-" ^ m.status)>(txt m.status)</span>
+           </div>
+         </a>
+       ) |> cat |> raw)
+     </div>)
+</div>
+</Client_layout>

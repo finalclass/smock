@@ -1,0 +1,4 @@
+(executable
+ (name main)
+ (link_flags -linkall)
+ (libraries app contract well.core well.cap eio_main))

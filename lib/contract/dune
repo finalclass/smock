@@ -1,0 +1,2 @@
+(include_subdirs no)
+; Contract library lives in build/ocaml/

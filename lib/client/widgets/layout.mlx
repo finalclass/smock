@@ -1,0 +1,33 @@
+let createElement ?title:(page_title = "Smock") ?req ?(children = []) () =
+  let open Html in
+  let user_display = match req with
+    | Some r ->
+      (match Well.current_user r with
+       | Some uid ->
+         let display = match Well.Auth.get_user (int_of_string uid) with
+           | Some u -> u.email | None -> uid in
+         raw (Printf.sprintf
+           {|<div class="header-user"><span>%s</span><form action="/logout" method="POST" class="inline-form"><input type="hidden" name="_csrf_token" value="%s" /><button type="submit" class="logout-btn">Logout</button></form></div>|}
+           (Html.escape_html display) (Html.escape_html (Well.csrf_token r)))
+       | None -> txt "")
+    | None -> txt ""
+  in
+  let page = <html lang="en">
+    <head>
+      <meta charset="utf-8" />
+      <meta name_="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>(txt page_title)</title>
+      <link rel="stylesheet" href="/static/app.css" />
+    </head>
+    <body>
+      <header class_="admin-header">
+        <a href="/" class_="logo">
+          <img src="/static/logo.png" alt="Smock" class_="logo-img" />
+        </a>
+        user_display
+      </header>
+      <main class_="admin-main">(children |> cat |> raw)</main>
+      <script type_="module" src="/static/well.js" />
+    </body>
+  </html> in
+  [raw "<!DOCTYPE html>"; page] |> cat |> raw

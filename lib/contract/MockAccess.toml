@@ -1,0 +1,61 @@
+[service.rpc]
+list_by_project = "ProjectReq -> MockList"
+get = "IdReq -> Mock"
+get_by_slug = "SlugReq -> Mock"
+create = "CreateReq -> Mock"
+update_status = "StatusReq -> Mock"
+delete = "IdReq -> Ok"
+add_file = "AddFileReq -> MockFile"
+list_files = "IdReq -> MockFileList"
+
+[msg.Mock.struct]
+id = "int"
+project_id = "int"
+name = "string"
+slug = "string"
+status = "string"
+entry_file = "string"
+created_at = "string"
+updated_at = "string"
+
+[msg.MockFile.struct]
+id = "int"
+mock_id = "int"
+path = "string"
+content_type = "string"
+size = "int"
+
+[msg.ProjectReq.struct]
+project_id = "int"
+
+[msg.IdReq.struct]
+id = "int"
+
+[msg.SlugReq.struct]
+project_id = "int"
+slug = "string"
+
+[msg.CreateReq.struct]
+project_id = "int"
+name = "string"
+slug = "string"
+entry_file = "string"
+
+[msg.StatusReq.struct]
+id = "int"
+status = "string"
+
+[msg.AddFileReq.struct]
+mock_id = "int"
+path = "string"
+content_type = "string"
+size = "int"
+
+[msg.MockList.struct]
+mocks = { type = "list", of = "Mock" }
+
+[msg.MockFileList.struct]
+files = { type = "list", of = "MockFile" }
+
+[msg.Ok.struct]
+ok = "bool"

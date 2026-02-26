@@ -1,0 +1,16 @@
+let createElement ?title:(page_title = "Smock") ?(children = []) () =
+  let open Html in
+  let page = <html lang="en">
+    <head>
+      <meta charset="utf-8" />
+      <meta name_="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>(txt page_title)</title>
+      <link rel="stylesheet" href="/static/app.css" />
+    </head>
+    <body class_="client-body">
+      (children |> cat |> raw)
+      <script type_="module" src="/static/well.js" />
+      <script type_="module" src="/static/mock-viewer.js" />
+    </body>
+  </html> in
+  [raw "<!DOCTYPE html>"; page] |> cat |> raw

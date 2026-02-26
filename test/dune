@@ -1,0 +1,3 @@
+(test
+ (name smock_test)
+ (libraries app well.test))

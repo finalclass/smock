@@ -1,0 +1,146 @@
+type comment_entry =
+  { id: int
+  ; page_path: string
+  ; x_pct: float
+  ; y_pct: float
+  ; author_name: string
+  ; body: string
+  ; resolved: bool
+  ; created_at: string }
+[@@deriving yojson]
+
+type model =
+  { mock_id: int
+  ; page_path: string
+  ; comments: comment_entry list
+  ; author_name: string }
+[@@deriving yojson]
+
+type msg =
+  | SetPage of string
+  | SubmitComment of { author: string; body: string; x: string; y: string; page: string }
+  | ResolveComment of int
+  | DeleteComment of int
+  | Refresh
+[@@deriving yojson]
+
+let persistence = Well.LiveView.Ephemeral
+let subscriptions = [Well.topic_name Events.comment_event]
+
+let load_comments ctx mock_id =
+  let result = Comment_access.list_by_mock ~ctx ~mock_id in
+  List.map (fun (c : Comment_access.Comment.t) ->
+    { id = c.id; page_path = c.page_path; x_pct = c.x_pct; y_pct = c.y_pct;
+      author_name = c.author_name; body = c.body; resolved = c.resolved;
+      created_at = c.created_at }
+  ) result.comments
+
+let init req props =
+  let open Yojson.Safe.Util in
+  let mock_id =
+    try props |> member "mock_id" |> to_int with _ ->
+    try props |> member "mock_id" |> to_string |> int_of_string with _ -> 0
+  in
+  let ctx = Well.rpc_ctx req in
+  let comments = load_comments ctx mock_id in
+  let entry_file =
+    try props |> member "entry_file" |> to_string with _ -> ""
+  in
+  { mock_id; page_path = entry_file; comments; author_name = "" }
+
+let update req model = function
+  | SetPage path ->
+    { model with page_path = path }
+  | SubmitComment { author; body; x; y; page } ->
+    let x_pct = (try float_of_string x with _ -> -1.0) in
+    let y_pct = (try float_of_string y with _ -> -1.0) in
+    let page_path = if page <> "" then page else model.page_path in
+    let ctx = Well.rpc_ctx req in
+    let _comment = Comment_access.create ~ctx ~mock_id:model.mock_id
+        ~page_path ~x_pct ~y_pct
+        ~author_name:author ~body in
+    Well.publish Events.comment_event (`CommentAdded (model.mock_id, _comment.id));
+    let comments = load_comments ctx model.mock_id in
+    { model with comments; author_name = author }
+  | ResolveComment id ->
+    let ctx = Well.rpc_ctx req in
+    ignore (Comment_access.resolve ~ctx ~id);
+    Well.publish Events.comment_event (`CommentResolved (model.mock_id, id));
+    let comments = load_comments ctx model.mock_id in
+    { model with comments }
+  | DeleteComment id ->
+    let ctx = Well.rpc_ctx req in
+    ignore (Comment_access.delete ~ctx ~id);
+    Well.publish Events.comment_event (`CommentDeleted (model.mock_id, id));
+    let comments = load_comments ctx model.mock_id in
+    { model with comments }
+  | Refresh ->
+    let ctx = Well.rpc_ctx req in
+    let comments = load_comments ctx model.mock_id in
+    { model with comments }
+
+let handle_params _req model = model
+let temporary_assigns model = model
+
+let view model =
+  let open Html in
+  let page_comments = List.filter (fun (c : comment_entry) ->
+    model.page_path = "" || c.page_path = model.page_path
+  ) model.comments in
+  let active_comments = List.filter (fun (c : comment_entry) -> not c.resolved) page_comments in
+  let resolved_comments = List.filter (fun (c : comment_entry) -> c.resolved) page_comments in
+  <div class_="comments-live">
+    <div class_="comments-scroll">
+      <div class_="comments-header">
+        <h3>(txt "Comments")</h3>
+        <span class_="comment-count">(txt (string_of_int (List.length active_comments)))</span>
+      </div>
+      <div class_="comment-list">
+        (active_comments |> List.map (fun (c : comment_entry) ->
+          <div class_="comment-item"
+               attrs=[("data-comment-id", string_of_int c.id);
+                      ("data-comment-x", Printf.sprintf "%.1f" c.x_pct);
+                      ("data-comment-y", Printf.sprintf "%.1f" c.y_pct);
+                      ("data-comment-page", c.page_path)]>
+            <div class_="comment-meta">
+              <strong>(txt c.author_name)</strong>
+              <span class_="comment-page">(txt (Filename.basename c.page_path))</span>
+            </div>
+            <p class_="comment-body">(txt c.body)</p>
+            <div class_="comment-actions">
+              <button data_lv_click=(Printf.sprintf {|["ResolveComment",%d]|} c.id) class_="btn-resolve">(txt "Resolve")</button>
+              <button data_lv_click=(Printf.sprintf {|["DeleteComment",%d]|} c.id) class_="btn-delete">(txt "Delete")</button>
+            </div>
+          </div>
+        ) |> cat |> raw)
+      </div>
+      (if resolved_comments <> [] then
+        <div class_="resolved-section">
+          <h4>(txt "Resolved")</h4>
+          (resolved_comments |> List.map (fun (c : comment_entry) ->
+            <div class_="comment-item">
+              <div class_="comment-meta">
+                <strong>(txt c.author_name)</strong>
+              </div>
+              <p class_="comment-body">(txt c.body)</p>
+            </div>
+          ) |> cat |> raw)
+        </div>
+      else <span>(txt "")</span>)
+    </div>
+    <div class_="comment-form-bottom" id="comment-form" attrs=[("data-lv-ignore", "true")]>
+      <form data_lv_submit="SubmitComment">
+        <input type_="text" name_="author" placeholder="Your name" value=(Html.escape_html model.author_name) />
+        <input type_="hidden" name_="page" id="comment-page" value="" />
+        <input type_="hidden" name_="x" id="comment-x" value="-1" />
+        <input type_="hidden" name_="y" id="comment-y" value="-1" />
+        <div class_="comment-input-row">
+          <textarea name_="body" placeholder="Write a comment..." rows="2">(txt "")</textarea>
+          <button type_="button" class_="btn-place-pin" id="place-pin-btn" title="Place pin on mockup">
+            (raw {|<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>|})
+          </button>
+          <button type_="submit" class_="btn btn-primary btn-send">(txt "Wyślij")</button>
+        </div>
+      </form>
+    </div>
+  </div>

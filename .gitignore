@@ -1,0 +1,15 @@
+_build/
+*.install
+.merlin
+_opam/
+_esy/
+data/*.sqlite
+data/*.sqlite-wal
+data/*.sqlite-shm
+node_modules/
+_docs/
+.env
+well.log
+data/mocks/
+data/uploads/
+data/certs/

@@ -1,0 +1,100 @@
+Well.get "/projects/:id" @@
+Well.Auth.require_grant "admin" (fun req ->
+let open Html in
+let ctx = Well.rpc_ctx req in
+let id = int_of_string (Well.param req "id") in
+let project = Project_access.get ~ctx ~id in
+let mocks_result = Mock_access.list_by_project ~ctx ~project_id:id in
+<Layout title=("Smock — " ^ project.name) req=req>
+<div class_="project-detail">
+  <div class_="page-header">
+    <a href="/" class_="back-link">(txt "Projects")</a>
+    <h1>(txt project.name)</h1>
+  </div>
+  <div class_="project-credentials">
+    <div class_="credential">
+      <label>(txt "Token")</label>
+      <code>(txt project.token)</code>
+    </div>
+    <div class_="credential">
+      <label>(txt "API Key")</label>
+      <code>(txt project.api_key)</code>
+    </div>
+    <div class_="credential">
+      <label>(txt "Client URL")</label>
+      <code>(txt ("/p/" ^ project.token))</code>
+    </div>
+  </div>
+  <h2>(txt "Mocks")</h2>
+  (match mocks_result.mocks with
+   | [] -> <p class_="empty-state">(txt "No mocks uploaded yet. Use the API to upload.")</p>
+   | mocks ->
+     <div class_="mock-list">
+       (mocks |> List.map (fun (m : Mock_access.Mock.t) ->
+         <div class_="mock-card">
+           <div class_="mock-info">
+             <h3>(txt m.name)</h3>
+             <div class_="mock-meta">
+               <span class_=("status status-" ^ m.status)>(txt m.status)</span>
+               <span>(txt m.slug)</span>
+               <span>(txt m.updated_at)</span>
+             </div>
+           </div>
+           <div class_="mock-actions">
+             <a href=("/p/" ^ project.token ^ "/" ^ m.slug) class_="btn btn-sm">(txt "View")</a>
+             <form action=("/projects/" ^ string_of_int project.id ^ "/mocks/" ^ string_of_int m.id ^ "/status") method_="POST" class_="inline-form">
+               (csrf_input (Well.csrf_token req))
+               (raw (Printf.sprintf {|<select name="status">
+                 <option value="draft"%s>Draft</option>
+                 <option value="review"%s>Review</option>
+                 <option value="approved"%s>Approved</option>
+                 <option value="rejected"%s>Rejected</option>
+               </select>|}
+                 (if m.status = "draft" then " selected" else "")
+                 (if m.status = "review" then " selected" else "")
+                 (if m.status = "approved" then " selected" else "")
+                 (if m.status = "rejected" then " selected" else "")))
+               <button type_="submit" class_="btn btn-sm">(txt "Update")</button>
+             </form>
+             (raw (Printf.sprintf {|<form action="/projects/%d/mocks/%d/delete" method="POST" class="inline-form" onsubmit="return confirm('Delete this mock?')"><input type="hidden" name="_csrf_token" value="%s" /><button type="submit" class="btn btn-sm btn-danger">Delete</button></form>|} project.id m.id (Html.escape_html (Well.csrf_token req))))
+           </div>
+         </div>
+       ) |> cat |> raw)
+     </div>)
+  <form action=("/projects/" ^ string_of_int project.id ^ "/delete") method_="POST" class_="delete-form">
+    (csrf_input (Well.csrf_token req))
+    <button type_="submit" class_="btn btn-danger">(txt "Delete Project")</button>
+  </form>
+</div>
+</Layout>)
+;;
+
+Well.post "/projects/:id/mocks/:mock_id/status" @@
+Well.Auth.require_grant "admin" (fun req ->
+let ctx = Well.rpc_ctx req in
+let id = Well.param req "id" in
+let mock_id = int_of_string (Well.param req "mock_id") in
+let status = Well.form req "status" in
+ignore (Mock_manager_impl.update_status ~ctx ~mock_id ~status);
+Well.redirect ("/projects/" ^ id))
+;;
+
+Well.post "/projects/:id/mocks/:mock_id/delete" @@
+Well.Auth.require_grant "admin" (fun req ->
+let ctx = Well.rpc_ctx req in
+let id = Well.param req "id" in
+let mock_id = int_of_string (Well.param req "mock_id") in
+ignore (Mock_manager_impl.delete_mock ~ctx ~mock_id);
+Well.redirect ("/projects/" ^ id))
+;;
+
+Well.post "/projects/:id/delete" @@
+Well.Auth.require_grant "admin" (fun req ->
+let ctx = Well.rpc_ctx req in
+let id = int_of_string (Well.param req "id") in
+let mocks_result = Mock_access.list_by_project ~ctx ~project_id:id in
+List.iter (fun (m : Mock_access.Mock.t) ->
+  ignore (Mock_manager_impl.delete_mock ~ctx ~mock_id:m.id)
+) mocks_result.mocks;
+ignore (Project_access.delete ~ctx ~id);
+Well.redirect "/")

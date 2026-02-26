@@ -1,0 +1,27 @@
+(version dev)
+
+(build
+ (all_platforms ((dune))))
+
+(depends
+ (all_platforms
+  (ocaml
+   mlx
+   eio
+   eio_main
+   yojson
+   sqlite3
+   tls-eio
+   mirage-crypto-pk
+   digestif
+   base64
+   zarith
+   ppxlib
+   otoml
+   camlzip)))
+
+(source
+ (fetch
+  (url file:///home/sel/Documents/well)))
+
+(dev)

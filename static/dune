@@ -1,0 +1,15 @@
+; TypeScript -> JavaScript (auto-promoted to source tree on build)
+; Requires bun — install from https://bun.sh
+(rule
+ (targets well.js)
+ (deps (file well.ts))
+ (mode promote)
+ (action (run bun build well.ts --outdir . --minify)))
+
+(rule
+ (targets mock-viewer.js)
+ (deps
+  (source_tree ts)
+  (source_tree ../lib/contract/build/ts))
+ (mode promote)
+ (action (run bun build ts/mock-viewer.ts --outdir . --minify)))

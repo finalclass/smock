@@ -1,0 +1,35 @@
+[service.rpc]
+list = "ListReq -> ProjectList"
+get = "IdReq -> Project"
+get_by_token = "TokenReq -> Project"
+get_by_api_key = "ApiKeyReq -> Project"
+create = "CreateReq -> Project"
+delete = "IdReq -> Ok"
+
+[msg.Project.struct]
+id = "int"
+name = "string"
+token = "string"
+api_key = "string"
+created_at = "string"
+
+[msg.ListReq.struct]
+limit = "int"
+
+[msg.IdReq.struct]
+id = "int"
+
+[msg.TokenReq.struct]
+token = "string"
+
+[msg.ApiKeyReq.struct]
+api_key = "string"
+
+[msg.CreateReq.struct]
+name = "string"
+
+[msg.ProjectList.struct]
+projects = { type = "list", of = "Project" }
+
+[msg.Ok.struct]
+ok = "bool"

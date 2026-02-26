@@ -1,0 +1,13 @@
+(library
+ (name contract)
+ (wrapped false)
+ (libraries well.core yojson))
+
+(rule
+ (targets project_access.ml mock_access.ml comment_access.ml)
+ (deps
+  (file ../../ProjectAccess.toml)
+  (file ../../MockAccess.toml)
+  (file ../../CommentAccess.toml))
+ (mode promote)
+ (action (run %{bin:well} contract build ../../ ..)))
