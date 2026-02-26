@@ -230,12 +230,23 @@ a:hover { text-decoration: underline; }
 .comment-form-bottom {
   flex-shrink: 0; padding: 0.75rem; border-top: 1px solid var(--border); background: #f9fafb;
 }
-.comment-form-bottom form { display: contents; }
-.comment-form-bottom input[type="text"] {
-  width: 100%; padding: 0.5rem; border: 1px solid var(--border);
-  border-radius: 4px; font-size: 0.875rem; margin-bottom: 0.5rem;
-  font-family: inherit;
+.comment-form-bottom form {
+  display: flex; flex-direction: column; gap: 0.5rem;
 }
+.comment-name-prompt {
+  text-align: center; padding: 0.5rem 0;
+}
+.comment-name-prompt p {
+  font-size: 0.875rem; color: var(--muted); margin-bottom: 0.5rem;
+}
+.name-prompt-row {
+  display: flex; gap: 0.5rem;
+}
+.name-prompt-row input {
+  flex: 1; padding: 0.5rem; border: 1px solid var(--border);
+  border-radius: 4px; font-size: 0.875rem; font-family: inherit;
+}
+.name-prompt-row .btn { padding: 0.5rem 1rem; }
 .comment-input-row {
   display: flex; gap: 0.5rem; align-items: flex-end;
 }
@@ -260,8 +271,8 @@ a:hover { text-decoration: underline; }
   animation: none;
 }
 .btn-send {
-  padding: 0.5rem 1rem; font-size: 0.8rem; white-space: nowrap;
-  flex-shrink: 0; border-radius: var(--radius);
+  width: 100%; padding: 0.5rem 1rem; font-size: 0.8rem;
+  border-radius: var(--radius);
 }
 .comment-pin-preview {
   background: var(--muted) !important; opacity: 0.7;

@@ -400,4 +400,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initial render
   renderPins();
+
+  // --- Author name flow (localStorage with 1-day expiry) ---
+
+  const namePrompt = document.getElementById('comment-name-prompt');
+  const formInner = document.getElementById('comment-form-inner');
+  const authorInput = document.getElementById('comment-author') as HTMLInputElement | null;
+
+  function checkAuthor() {
+    const stored = localStorage.getItem('smock_author');
+    if (stored) {
+      try {
+        const data = JSON.parse(stored);
+        const age = Date.now() - data.timestamp;
+        if (age < 86400000 && data.name) {
+          if (namePrompt) namePrompt.style.display = 'none';
+          if (formInner) formInner.style.display = '';
+          if (authorInput) authorInput.value = data.name;
+          return;
+        }
+      } catch (_) {}
+      localStorage.removeItem('smock_author');
+    }
+    if (namePrompt) namePrompt.style.display = '';
+    if (formInner) formInner.style.display = 'none';
+  }
+  checkAuthor();
+
+  const nameBtn = document.getElementById('name-prompt-btn');
+  const nameInput = document.getElementById('name-prompt-input') as HTMLInputElement | null;
+
+  if (nameBtn && nameInput) {
+    function submitName() {
+      const name = nameInput!.value.trim();
+      if (!name) return;
+      localStorage.setItem('smock_author', JSON.stringify({ name, timestamp: Date.now() }));
+      checkAuthor();
+    }
+    nameBtn.addEventListener('click', submitName);
+    nameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') submitName();
+    });
+  }
 });
