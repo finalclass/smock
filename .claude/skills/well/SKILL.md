@@ -1458,33 +1458,24 @@ Well.url_decode : string -> string
 
 Well apps are single-binary deployments. The scaffold generates a `.service` file for systemd.
 
-**Simple deployment** (when target has matching libraries):
+### `well build` — Production build with bundled libraries
+
 ```bash
-dune build
-scp _build/default/bin/main.exe server:/srv/myapp/bin/myapp
-scp -r static/ server:/srv/myapp/static/
-scp -r data/ server:/srv/myapp/data/
-scp myapp.service server:/etc/systemd/system/
-ssh server "systemctl enable --now myapp"
+well build    # requires: patchelf
 ```
 
-**Self-contained deployment** (patchelf — bundles .so, works on any Linux x86_64):
+Runs `dune build`, discovers all `.so` via `ldd`, copies binary + libs to `_release/`,
+runs `patchelf` (interpreter + rpath). Works on any Linux x86_64.
+
+### `well release` — Create deployable archive
+
 ```bash
-make release    # creates _release/ with binary + lib/
-scp -r _release/ server:/srv/myapp/
+well release    # runs well build, then creates .tar.gz
 ```
 
-**Server directory structure:**
-```
-/srv/myapp/
-  bin/myapp              # binary
-  data/                  # SQLite databases (app.sqlite, well.sqlite)
-  data/certs/            # auto-TLS certificates (managed by Well)
-  static/                # CSS, JS, assets
-```
+Deploy: `scp myapp.tar.gz server:/srv/myapp/ && ssh server "cd /srv/myapp && tar xzf myapp.tar.gz"`
 
-**HTTPS**: Use `Well.run ~domain:"myapp.example.com" ~port:443 ()` — auto-provisions Let's Encrypt
-certificate, stores in `data/certs/`, auto-renews. No nginx needed. Also listens on :80 for ACME + redirects.
+**HTTPS**: `Well.run ~domain:"myapp.example.com" ~port:443 ()` — auto Let's Encrypt, no nginx needed.
 
 ---
 
@@ -1492,6 +1483,8 @@ certificate, stores in `data/certs/`, auto-renews. No nginx needed. Also listens
 
 ```bash
 well init <name>              # Scaffold new project
+well build                    # Production build (patchelf + bundle .so → _release/)
+well release                  # Build + .tar.gz archive for deployment
 well test [-w] [-f pat] [-u]  # Run tests (watch, filter, update snapshots)
 well docs [--open] [-o dir]   # Generate HTML documentation from (** *) comments
 well contract build [dir]     # Generate code from TOML contracts
