@@ -6,14 +6,17 @@ type project_row = {
   token : string;
   api_key : string;
   created_at : string;
+  user_id : int;
 } [@@deriving table ~name:"projects"]
 
-let%query all_projects = "SELECT id, name, token, api_key, created_at FROM projects ORDER BY id DESC"
-let%query find_project = "SELECT id, name, token, api_key, created_at FROM projects WHERE id = :id"
-let%query find_by_token = "SELECT id, name, token, api_key, created_at FROM projects WHERE token = :token"
-let%query find_by_api_key = "SELECT id, name, token, api_key, created_at FROM projects WHERE api_key = :api_key"
-let%query insert_project = "INSERT INTO projects (name, token, api_key, created_at) VALUES (:name, :token, :api_key, :created_at)"
+let%query all_projects = "SELECT id, name, token, api_key, created_at, user_id FROM projects ORDER BY id DESC"
+let%query projects_by_user = "SELECT id, name, token, api_key, created_at, user_id FROM projects WHERE user_id = :user_id ORDER BY id DESC"
+let%query find_project = "SELECT id, name, token, api_key, created_at, user_id FROM projects WHERE id = :id"
+let%query find_by_token = "SELECT id, name, token, api_key, created_at, user_id FROM projects WHERE token = :token"
+let%query find_by_api_key = "SELECT id, name, token, api_key, created_at, user_id FROM projects WHERE api_key = :api_key"
+let%query insert_project = "INSERT INTO projects (name, token, api_key, created_at, user_id) VALUES (:name, :token, :api_key, :created_at, :user_id)"
 let%query delete_project = "DELETE FROM projects WHERE id = :id"
+let%query assign_orphan_projects = "UPDATE projects SET user_id = :user_id WHERE user_id = 0"
 
 let db = lazy (Well.Db.open_db ())
 let get_db () = Lazy.force db
@@ -37,16 +40,19 @@ let now () =
     tm.tm_hour tm.tm_min tm.tm_sec
 
 let project_of_row (r : All_projects.row) : Project_access.Project.t =
-  { id = r.id; name = r.name; token = r.token; api_key = r.api_key; created_at = r.created_at }
+  { id = r.id; name = r.name; token = r.token; api_key = r.api_key; created_at = r.created_at; user_id = r.user_id }
+
+let project_of_user_row (r : Projects_by_user.row) : Project_access.Project.t =
+  { id = r.id; name = r.name; token = r.token; api_key = r.api_key; created_at = r.created_at; user_id = r.user_id }
 
 let project_of_find (r : Find_project.row) : Project_access.Project.t =
-  { id = r.id; name = r.name; token = r.token; api_key = r.api_key; created_at = r.created_at }
+  { id = r.id; name = r.name; token = r.token; api_key = r.api_key; created_at = r.created_at; user_id = r.user_id }
 
 let project_of_token (r : Find_by_token.row) : Project_access.Project.t =
-  { id = r.id; name = r.name; token = r.token; api_key = r.api_key; created_at = r.created_at }
+  { id = r.id; name = r.name; token = r.token; api_key = r.api_key; created_at = r.created_at; user_id = r.user_id }
 
 let project_of_api_key (r : Find_by_api_key.row) : Project_access.Project.t =
-  { id = r.id; name = r.name; token = r.token; api_key = r.api_key; created_at = r.created_at }
+  { id = r.id; name = r.name; token = r.token; api_key = r.api_key; created_at = r.created_at; user_id = r.user_id }
 
 module Impl : Project_access.IMPL with type state = unit = struct
   type state = unit
@@ -61,6 +67,12 @@ module Impl : Project_access.IMPL with type state = unit = struct
         List.filteri (fun i _ -> i < req.limit) projects
       else projects
     in
+    Project_access.ProjectList.make ~projects ()
+
+  let list_by_user () _ctx (req : Project_access.UserReq.t) =
+    let db = get_db () in
+    let rows = Projects_by_user.query db ~user_id:req.user_id in
+    let projects = List.map project_of_user_row rows in
     Project_access.ProjectList.make ~projects ()
 
   let get () _ctx (req : Project_access.IdReq.t) =
@@ -86,9 +98,9 @@ module Impl : Project_access.IMPL with type state = unit = struct
     let token = gen_token () in
     let api_key = gen_api_key () in
     let created_at = now () in
-    Insert_project.exec db ~name:req.name ~token ~api_key ~created_at;
+    Insert_project.exec db ~name:req.name ~token ~api_key ~created_at ~user_id:req.user_id;
     let id = Int64.to_int (Sqlite3.last_insert_rowid db) in
-    Project_access.Project.make ~id ~name:req.name ~token ~api_key ~created_at ()
+    Project_access.Project.make ~id ~name:req.name ~token ~api_key ~created_at ~user_id:req.user_id ()
 
   let delete () _ctx (req : Project_access.IdReq.t) =
     let db = get_db () in
@@ -97,3 +109,7 @@ module Impl : Project_access.IMPL with type state = unit = struct
 end
 
 let spec = Project_access.make_spec (module Impl)
+
+let assign_orphans ~user_id =
+  let db = get_db () in
+  Assign_orphan_projects.exec db ~user_id

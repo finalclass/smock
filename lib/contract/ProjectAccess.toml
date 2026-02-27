@@ -1,5 +1,6 @@
 [service.rpc]
 list = "ListReq -> ProjectList"
+list_by_user = "UserReq -> ProjectList"
 get = "IdReq -> Project"
 get_by_token = "TokenReq -> Project"
 get_by_api_key = "ApiKeyReq -> Project"
@@ -12,6 +13,7 @@ name = "string"
 token = "string"
 api_key = "string"
 created_at = "string"
+user_id = "int"
 
 [msg.ListReq.struct]
 limit = "int"
@@ -25,8 +27,12 @@ token = "string"
 [msg.ApiKeyReq.struct]
 api_key = "string"
 
+[msg.UserReq.struct]
+user_id = "int"
+
 [msg.CreateReq.struct]
 name = "string"
+user_id = "int"
 
 [msg.ProjectList.struct]
 projects = { type = "list", of = "Project" }

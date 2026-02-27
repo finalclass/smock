@@ -7,10 +7,11 @@ module Project = struct
     token : string;
     api_key : string;
     created_at : string;
+    user_id : int;
   }
 
-  let make ~id ~name ~token ~api_key ~created_at () =
-    { id; name; token; api_key; created_at }
+  let make ~id ~name ~token ~api_key ~created_at ~user_id () =
+    { id; name; token; api_key; created_at; user_id }
 
   let to_wire (v : t) : Yojson.Safe.t =
     `List [
@@ -19,6 +20,7 @@ module Project = struct
       `String v.token;
       `String v.api_key;
       `String v.created_at;
+      `Int v.user_id;
     ]
 
   let of_wire (wire : Yojson.Safe.t) : t =
@@ -31,7 +33,8 @@ module Project = struct
       let token = (match (_g 2) with `String s -> s | _ -> "") in
       let api_key = (match (_g 3) with `String s -> s | _ -> "") in
       let created_at = (match (_g 4) with `String s -> s | _ -> "") in
-      { id; name; token; api_key; created_at }
+      let user_id = (match (_g 5) with `Int i -> i | _ -> 0) in
+      { id; name; token; api_key; created_at; user_id }
     | _ -> failwith "Project.of_wire: expected JSON array"
 end
 
@@ -127,17 +130,42 @@ module ApiKeyReq = struct
     | _ -> failwith "ApiKeyReq.of_wire: expected JSON array"
 end
 
+module UserReq = struct
+  type t = {
+    user_id : int;
+  }
+
+  let make ~user_id () =
+    { user_id }
+
+  let to_wire (v : t) : Yojson.Safe.t =
+    `List [
+      `Int v.user_id;
+    ]
+
+  let of_wire (wire : Yojson.Safe.t) : t =
+    match wire with
+    | `List arr ->
+      let a = Array.of_list arr in
+      let _g i = if i < Array.length a then a.(i) else `Null in
+      let user_id = (match (_g 0) with `Int i -> i | _ -> 0) in
+      { user_id }
+    | _ -> failwith "UserReq.of_wire: expected JSON array"
+end
+
 module CreateReq = struct
   type t = {
     name : string;
+    user_id : int;
   }
 
-  let make ~name () =
-    { name }
+  let make ~name ~user_id () =
+    { name; user_id }
 
   let to_wire (v : t) : Yojson.Safe.t =
     `List [
       `String v.name;
+      `Int v.user_id;
     ]
 
   let of_wire (wire : Yojson.Safe.t) : t =
@@ -146,7 +174,8 @@ module CreateReq = struct
       let a = Array.of_list arr in
       let _g i = if i < Array.length a then a.(i) else `Null in
       let name = (match (_g 0) with `String s -> s | _ -> "") in
-      { name }
+      let user_id = (match (_g 1) with `Int i -> i | _ -> 0) in
+      { name; user_id }
     | _ -> failwith "CreateReq.of_wire: expected JSON array"
 end
 
@@ -202,6 +231,7 @@ module type IMPL = sig
   type state
   val init : unit -> state
   val list : state -> Well.rpc_ctx -> ListReq.t -> ProjectList.t
+  val list_by_user : state -> Well.rpc_ctx -> UserReq.t -> ProjectList.t
   val get : state -> Well.rpc_ctx -> IdReq.t -> Project.t
   val get_by_token : state -> Well.rpc_ctx -> TokenReq.t -> Project.t
   val get_by_api_key : state -> Well.rpc_ctx -> ApiKeyReq.t -> Project.t
@@ -217,21 +247,25 @@ let make_spec (type s) (module I : IMPL with type state = s) : Well.Service.spec
       ; params = [{ Well.Service.pname = "limit"; ptype = "int"; poptional = false }]
       ; returns = [{ Well.Service.pname = "projects"; ptype = "Project list"; poptional = false }]
       ; returns_name = "ProjectList" };
+      { Well.Service.rname = "list_by_user"
+      ; params = [{ Well.Service.pname = "user_id"; ptype = "int"; poptional = false }]
+      ; returns = [{ Well.Service.pname = "projects"; ptype = "Project list"; poptional = false }]
+      ; returns_name = "ProjectList" };
       { Well.Service.rname = "get"
       ; params = [{ Well.Service.pname = "id"; ptype = "int"; poptional = false }]
-      ; returns = [{ Well.Service.pname = "id"; ptype = "int"; poptional = false }; { Well.Service.pname = "name"; ptype = "string"; poptional = false }; { Well.Service.pname = "token"; ptype = "string"; poptional = false }; { Well.Service.pname = "api_key"; ptype = "string"; poptional = false }; { Well.Service.pname = "created_at"; ptype = "string"; poptional = false }]
+      ; returns = [{ Well.Service.pname = "id"; ptype = "int"; poptional = false }; { Well.Service.pname = "name"; ptype = "string"; poptional = false }; { Well.Service.pname = "token"; ptype = "string"; poptional = false }; { Well.Service.pname = "api_key"; ptype = "string"; poptional = false }; { Well.Service.pname = "created_at"; ptype = "string"; poptional = false }; { Well.Service.pname = "user_id"; ptype = "int"; poptional = false }]
       ; returns_name = "Project" };
       { Well.Service.rname = "get_by_token"
       ; params = [{ Well.Service.pname = "token"; ptype = "string"; poptional = false }]
-      ; returns = [{ Well.Service.pname = "id"; ptype = "int"; poptional = false }; { Well.Service.pname = "name"; ptype = "string"; poptional = false }; { Well.Service.pname = "token"; ptype = "string"; poptional = false }; { Well.Service.pname = "api_key"; ptype = "string"; poptional = false }; { Well.Service.pname = "created_at"; ptype = "string"; poptional = false }]
+      ; returns = [{ Well.Service.pname = "id"; ptype = "int"; poptional = false }; { Well.Service.pname = "name"; ptype = "string"; poptional = false }; { Well.Service.pname = "token"; ptype = "string"; poptional = false }; { Well.Service.pname = "api_key"; ptype = "string"; poptional = false }; { Well.Service.pname = "created_at"; ptype = "string"; poptional = false }; { Well.Service.pname = "user_id"; ptype = "int"; poptional = false }]
       ; returns_name = "Project" };
       { Well.Service.rname = "get_by_api_key"
       ; params = [{ Well.Service.pname = "api_key"; ptype = "string"; poptional = false }]
-      ; returns = [{ Well.Service.pname = "id"; ptype = "int"; poptional = false }; { Well.Service.pname = "name"; ptype = "string"; poptional = false }; { Well.Service.pname = "token"; ptype = "string"; poptional = false }; { Well.Service.pname = "api_key"; ptype = "string"; poptional = false }; { Well.Service.pname = "created_at"; ptype = "string"; poptional = false }]
+      ; returns = [{ Well.Service.pname = "id"; ptype = "int"; poptional = false }; { Well.Service.pname = "name"; ptype = "string"; poptional = false }; { Well.Service.pname = "token"; ptype = "string"; poptional = false }; { Well.Service.pname = "api_key"; ptype = "string"; poptional = false }; { Well.Service.pname = "created_at"; ptype = "string"; poptional = false }; { Well.Service.pname = "user_id"; ptype = "int"; poptional = false }]
       ; returns_name = "Project" };
       { Well.Service.rname = "create"
-      ; params = [{ Well.Service.pname = "name"; ptype = "string"; poptional = false }]
-      ; returns = [{ Well.Service.pname = "id"; ptype = "int"; poptional = false }; { Well.Service.pname = "name"; ptype = "string"; poptional = false }; { Well.Service.pname = "token"; ptype = "string"; poptional = false }; { Well.Service.pname = "api_key"; ptype = "string"; poptional = false }; { Well.Service.pname = "created_at"; ptype = "string"; poptional = false }]
+      ; params = [{ Well.Service.pname = "name"; ptype = "string"; poptional = false }; { Well.Service.pname = "user_id"; ptype = "int"; poptional = false }]
+      ; returns = [{ Well.Service.pname = "id"; ptype = "int"; poptional = false }; { Well.Service.pname = "name"; ptype = "string"; poptional = false }; { Well.Service.pname = "token"; ptype = "string"; poptional = false }; { Well.Service.pname = "api_key"; ptype = "string"; poptional = false }; { Well.Service.pname = "created_at"; ptype = "string"; poptional = false }; { Well.Service.pname = "user_id"; ptype = "int"; poptional = false }]
       ; returns_name = "Project" };
       { Well.Service.rname = "delete"
       ; params = [{ Well.Service.pname = "id"; ptype = "int"; poptional = false }]
@@ -243,6 +277,8 @@ let make_spec (type s) (module I : IMPL with type state = s) : Well.Service.spec
       match rpc_name with
       | "list" ->
           ProjectList.to_wire (I.list !state ctx (ListReq.of_wire payload))
+      | "list_by_user" ->
+          ProjectList.to_wire (I.list_by_user !state ctx (UserReq.of_wire payload))
       | "get" ->
           Project.to_wire (I.get !state ctx (IdReq.of_wire payload))
       | "get_by_token" ->
@@ -263,6 +299,14 @@ let list ~ctx ~limit =
   ProjectList.of_wire
     ((match !_service_ref with
       | Some f -> f "list" ctx_wire wire
+      | None -> failwith "ProjectAccess: service not registered"))
+
+let list_by_user ~ctx ~user_id =
+  let ctx_wire = Well.rpc_ctx_to_wire ctx in
+  let wire = UserReq.to_wire (UserReq.make ~user_id ()) in
+  ProjectList.of_wire
+    ((match !_service_ref with
+      | Some f -> f "list_by_user" ctx_wire wire
       | None -> failwith "ProjectAccess: service not registered"))
 
 let get ~ctx ~id =
@@ -289,9 +333,9 @@ let get_by_api_key ~ctx ~api_key =
       | Some f -> f "get_by_api_key" ctx_wire wire
       | None -> failwith "ProjectAccess: service not registered"))
 
-let create ~ctx ~name =
+let create ~ctx ~name ~user_id =
   let ctx_wire = Well.rpc_ctx_to_wire ctx in
-  let wire = CreateReq.to_wire (CreateReq.make ~name ()) in
+  let wire = CreateReq.to_wire (CreateReq.make ~name ~user_id ()) in
   Project.of_wire
     ((match !_service_ref with
       | Some f -> f "create" ctx_wire wire

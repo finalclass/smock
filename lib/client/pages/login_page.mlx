@@ -14,6 +14,7 @@ let error = Well.query req "error" in
     (raw {|<input type="password" name="password" placeholder="Password" required />|})
     <button type_="submit" class_="btn">(txt "Login")</button>
   </form>
+  <p class_="auth-link">(txt "Don't have an account? ")<a href="/register">(txt "Register")</a></p>
 </div>
 </Layout>
 ;;
@@ -22,13 +23,7 @@ Well.post "/login" @@ fun req ->
 let email = Well.form req "email" in
 let password = Well.form req "password" in
 match Well.Auth.login_and_set_session req ~email ~password with
-| Ok user ->
-  if Well.Auth.has_grant ~user_id:user.id "admin" then
-    Well.redirect "/"
-  else begin
-    Well.Auth.logout req;
-    Well.redirect "/login?error=Access+denied"
-  end
+| Ok _ -> Well.redirect "/"
 | Error _msg ->
   Well.redirect "/login?error=Invalid+credentials"
 ;;

@@ -1,9 +1,10 @@
 Well.get "/projects/:id" @@
-Well.Auth.require_grant "admin" (fun req ->
+Api_auth.require_auth (fun req ->
 let open Html in
 let ctx = Well.rpc_ctx req in
 let id = int_of_string (Well.param req "id") in
 let project = Project_access.get ~ctx ~id in
+Api_auth.ensure_project_owner req project;
 let mocks_result = Mock_access.list_by_project ~ctx ~project_id:id in
 <Layout title=("Smock — " ^ project.name) req=req>
 <div class_="project-detail">
@@ -70,28 +71,34 @@ let mocks_result = Mock_access.list_by_project ~ctx ~project_id:id in
 ;;
 
 Well.post "/projects/:id/mocks/:mock_id/status" @@
-Well.Auth.require_grant "admin" (fun req ->
+Api_auth.require_auth (fun req ->
 let ctx = Well.rpc_ctx req in
-let id = Well.param req "id" in
+let id = int_of_string (Well.param req "id") in
+let project = Project_access.get ~ctx ~id in
+Api_auth.ensure_project_owner req project;
 let mock_id = int_of_string (Well.param req "mock_id") in
 let status = Well.form req "status" in
 ignore (Mock_manager_impl.update_status ~ctx ~mock_id ~status);
-Well.redirect ("/projects/" ^ id))
+Well.redirect ("/projects/" ^ string_of_int id))
 ;;
 
 Well.post "/projects/:id/mocks/:mock_id/delete" @@
-Well.Auth.require_grant "admin" (fun req ->
+Api_auth.require_auth (fun req ->
 let ctx = Well.rpc_ctx req in
-let id = Well.param req "id" in
+let id = int_of_string (Well.param req "id") in
+let project = Project_access.get ~ctx ~id in
+Api_auth.ensure_project_owner req project;
 let mock_id = int_of_string (Well.param req "mock_id") in
 ignore (Mock_manager_impl.delete_mock ~ctx ~mock_id);
-Well.redirect ("/projects/" ^ id))
+Well.redirect ("/projects/" ^ string_of_int id))
 ;;
 
 Well.post "/projects/:id/delete" @@
-Well.Auth.require_grant "admin" (fun req ->
+Api_auth.require_auth (fun req ->
 let ctx = Well.rpc_ctx req in
 let id = int_of_string (Well.param req "id") in
+let project = Project_access.get ~ctx ~id in
+Api_auth.ensure_project_owner req project;
 let mocks_result = Mock_access.list_by_project ~ctx ~project_id:id in
 List.iter (fun (m : Mock_access.Mock.t) ->
   ignore (Mock_manager_impl.delete_mock ~ctx ~mock_id:m.id)

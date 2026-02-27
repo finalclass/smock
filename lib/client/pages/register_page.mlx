@@ -1,0 +1,37 @@
+Well.get "/register" @@ fun req ->
+let open Html in
+let error = Well.query req "error" in
+<Layout title="Smock — Register" req=req>
+<div class_="login-page">
+  <img src="/static/logo.png" alt="Smock" class_="login-logo" />
+  <h1>(txt "Register")</h1>
+  (match error with
+   | Some msg -> <p class_="form-error">(txt msg)</p>
+   | None -> <span>(txt "")</span>)
+  <form action="/register" method_="POST" class_="login-form">
+    (csrf_input (Well.csrf_token req))
+    (raw {|<input type="email" name="email" placeholder="Email" required autofocus />|})
+    (raw {|<input type="password" name="password" placeholder="Password" required />|})
+    (raw {|<input type="password" name="password_confirm" placeholder="Confirm password" required />|})
+    <button type_="submit" class_="btn">(txt "Register")</button>
+  </form>
+  <p class_="auth-link">(txt "Already have an account? ")<a href="/login">(txt "Login")</a></p>
+</div>
+</Layout>
+;;
+
+Well.post "/register" @@ fun req ->
+let email = Well.form req "email" in
+let password = Well.form req "password" in
+let password_confirm = Well.form req "password_confirm" in
+if password <> password_confirm then
+  Well.redirect "/register?error=Passwords+do+not+match"
+else
+  match Well.Auth.register ~email ~password with
+  | Ok _user ->
+    (match Well.Auth.login_and_set_session req ~email ~password with
+     | Ok _ -> Well.redirect "/"
+     | Error _ -> Well.redirect "/login")
+  | Error msg ->
+    let encoded = String.concat "+" (String.split_on_char ' ' msg) in
+    Well.redirect ("/register?error=" ^ encoded)

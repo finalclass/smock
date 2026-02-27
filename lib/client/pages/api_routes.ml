@@ -1,13 +1,18 @@
 (* API routes — REST endpoints for Smock *)
 
 let () =
-  (* POST /api/projects — create project (requires SMOCK_ADMIN_KEY) *)
-  Well.post ~middleware:[Api_auth.require_admin_key] "/api/projects" @@ fun req ->
+  (* POST /api/projects — create project (requires api_key, inherits user_id) *)
+  Well.post ~middleware:[Api_auth.require_api_key] "/api/projects" @@ fun req ->
   let ctx = Well.rpc_ctx req in
   let json = Yojson.Safe.from_string req.body in
   let open Yojson.Safe.Util in
   let name = json |> member "name" |> to_string in
-  let project = Project_access.create ~ctx ~name in
+  let caller_project = Api_auth.get_project req in
+  let user_id = match caller_project with
+    | Some p -> p.user_id
+    | None -> failwith "No project context"
+  in
+  let project = Project_access.create ~ctx ~name ~user_id in
   Well.json (`Assoc [
     ("id", `Int project.id);
     ("name", `String project.name);
@@ -17,10 +22,15 @@ let () =
   ])
 
 let () =
-  (* GET /api/projects — list projects (requires api_key) *)
+  (* GET /api/projects — list projects scoped to api_key owner *)
   Well.get ~middleware:[Api_auth.require_api_key] "/api/projects" @@ fun req ->
   let ctx = Well.rpc_ctx req in
-  let result = Project_access.list ~ctx ~limit:0 in
+  let caller_project = Api_auth.get_project req in
+  let user_id = match caller_project with
+    | Some p -> p.user_id
+    | None -> failwith "No project context"
+  in
+  let result = Project_access.list_by_user ~ctx ~user_id in
   let projects_json = List.map (fun (p : Project_access.Project.t) ->
     `Assoc [
       ("id", `Int p.id);
@@ -37,6 +47,10 @@ let () =
   let ctx = Well.rpc_ctx req in
   let token = Well.param req "token" in
   let project = Project_access.get_by_token ~ctx ~token in
+  let caller_project = Api_auth.get_project req in
+  (match caller_project with
+   | Some p when p.user_id = project.user_id -> ()
+   | _ -> failwith "Access denied");
   let name = Well.form req "name" in
   let uploaded = Well.all_files req in
   let files = List.map (fun (_field, (f : Well.uploaded_file)) ->
@@ -58,6 +72,10 @@ let () =
   let ctx = Well.rpc_ctx req in
   let token = Well.param req "token" in
   let project = Project_access.get_by_token ~ctx ~token in
+  let caller_project = Api_auth.get_project req in
+  (match caller_project with
+   | Some p when p.user_id = project.user_id -> ()
+   | _ -> failwith "Access denied");
   let result = Mock_access.list_by_project ~ctx ~project_id:project.id in
   let mocks_json = List.map (fun (m : Mock_access.Mock.t) ->
     `Assoc [
@@ -76,6 +94,12 @@ let () =
   (* PUT /api/projects/:token/mocks/:id — update status (requires api_key) *)
   Well.put ~middleware:[Api_auth.require_api_key] "/api/projects/:token/mocks/:id" @@ fun req ->
   let ctx = Well.rpc_ctx req in
+  let token = Well.param req "token" in
+  let project = Project_access.get_by_token ~ctx ~token in
+  let caller_project = Api_auth.get_project req in
+  (match caller_project with
+   | Some p when p.user_id = project.user_id -> ()
+   | _ -> failwith "Access denied");
   let mock_id = int_of_string (Well.param req "id") in
   let json = Yojson.Safe.from_string req.body in
   let open Yojson.Safe.Util in
@@ -91,6 +115,12 @@ let () =
   (* DELETE /api/projects/:token/mocks/:id — delete mock (requires api_key) *)
   Well.delete ~middleware:[Api_auth.require_api_key] "/api/projects/:token/mocks/:id" @@ fun req ->
   let ctx = Well.rpc_ctx req in
+  let token = Well.param req "token" in
+  let project = Project_access.get_by_token ~ctx ~token in
+  let caller_project = Api_auth.get_project req in
+  (match caller_project with
+   | Some p when p.user_id = project.user_id -> ()
+   | _ -> failwith "Access denied");
   let mock_id = int_of_string (Well.param req "id") in
   ignore (Mock_manager_impl.delete_mock ~ctx ~mock_id);
   Well.json (`Assoc [("ok", `Bool true)])

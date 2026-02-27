@@ -1,4 +1,4 @@
-let setup_admin () =
+let setup_seed_user () =
   match Sys.getenv_opt "SMOCK_ADMIN_KEY" with
   | None
    |Some "" ->
@@ -9,15 +9,17 @@ let setup_admin () =
         | Some e -> e
         | None -> "admin@smock.local"
       in
-      match Well.Auth.register ~email ~password:admin_key with
-      | Ok user ->
-          ignore (Well.Auth.grant ~user_id:user.id "admin") ;
-          Printf.printf "Admin user created: %s (id=%d)\n%!" email user.id
-      | Error _ -> (
-        (* Already exists — ensure grant *)
-        match Well.Auth.login ~email ~password:admin_key with
-        | Ok user -> ignore (Well.Auth.grant ~user_id:user.id "admin")
-        | Error _ -> () ) )
+      let user_id = match Well.Auth.register ~email ~password:admin_key with
+        | Ok user ->
+            Printf.printf "Seed user created: %s (id=%d)\n%!" email user.id ;
+            user.id
+        | Error _ -> (
+          match Well.Auth.login ~email ~password:admin_key with
+          | Ok user -> user.id
+          | Error _ -> 0 )
+      in
+      if user_id > 0 then
+        Project_access_impl.assign_orphans ~user_id )
 
 let auth_error_handler : Well.middleware =
  fun next req ->
@@ -39,8 +41,8 @@ let run () =
   Well.Service.register Mock_access_impl.spec ;
   Well.Service.register Comment_access_impl.spec ;
 
-  (* Admin user setup from env *)
-  setup_admin () ;
+  (* Seed user setup from env *)
+  setup_seed_user () ;
 
   (* LiveView *)
   Well.live "/comments" (module Comments_live) ;

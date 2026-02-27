@@ -2,23 +2,25 @@
 set -euo pipefail
 
 HOST="fcmain"
-REMOTE_DIR="/srv/smock"
+REMOTE_DIR="/opt/smock"
 SERVICE="smock"
 
-echo "==> Building..."
-dune build
+echo "==> Building release..."
+well release
 
-BINARY="_build/default/bin/main.exe"
-if [ ! -f "$BINARY" ]; then
-  echo "ERROR: Binary not found at $BINARY"
+ARCHIVE=$(ls -t *.tar.gz 2>/dev/null | head -1)
+if [ -z "$ARCHIVE" ]; then
+  echo "ERROR: No .tar.gz archive found after well release"
   exit 1
 fi
 
-echo "==> Syncing files to $HOST:$REMOTE_DIR..."
-ssh "$HOST" "mkdir -p $REMOTE_DIR/bin $REMOTE_DIR/data $REMOTE_DIR/static"
+echo "==> Uploading $ARCHIVE to $HOST..."
+scp "$ARCHIVE" "$HOST:/tmp/$ARCHIVE"
 
-rsync -az --delete "$BINARY" "$HOST:$REMOTE_DIR/bin/smock"
-rsync -az --delete static/ "$HOST:$REMOTE_DIR/static/"
+echo "==> Extracting on server..."
+ssh "$HOST" "mkdir -p $REMOTE_DIR && tar -xzf /tmp/$ARCHIVE -C $REMOTE_DIR && rm /tmp/$ARCHIVE"
+
+echo "==> Syncing config..."
 rsync -az .env "$HOST:$REMOTE_DIR/.env"
 ssh "$HOST" "grep -q PRODUCTION $REMOTE_DIR/.env || echo 'PRODUCTION=true' >> $REMOTE_DIR/.env"
 rsync -az smock.service "$HOST:/etc/systemd/system/$SERVICE.service"

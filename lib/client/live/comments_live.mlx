@@ -16,22 +16,23 @@ type model =
   ; author_name: string }
 [@@deriving yojson]
 
+type submit_comment =
+  { author: string
+  ; body: string
+  ; x: string
+  ; y: string
+  ; page: string }
+[@@deriving yojson]
+
 type msg =
-  | SetPage of string
-  | SubmitComment of
-      { author: string
-      ; body: string
-      ; x: string
-      ; y: string
-      ; page: string }
-  | ResolveComment of int
-  | DeleteComment of int
-  | Refresh
+  [ Events.comment_event
+  | `SetPage of string
+  | `SubmitComment of submit_comment
+  | `ResolveComment of int
+  | `DeleteComment of int ]
 [@@deriving yojson]
 
 let persistence = Well.LiveView.Ephemeral
-
-let subscriptions = [Well.topic_name Events.comment_event]
 
 let load_comments ctx mock_id =
   let result = Comment_access.list_by_mock ~ctx ~mock_id in
@@ -61,11 +62,17 @@ let init req props =
     try props |> member "entry_file" |> to_string with
     | _ -> ""
   in
-  {mock_id; page_path= entry_file; comments; author_name= ""}
+  ({mock_id; page_path= entry_file; comments; author_name= ""},
+   [Well.topic_name Events.comment_event])
+
+let refresh_comments req model =
+  let ctx = Well.rpc_ctx req in
+  let comments = load_comments ctx model.mock_id in
+  {model with comments}
 
 let update req model = function
-  | SetPage path -> {model with page_path= path}
-  | SubmitComment {author; body; x; y; page} ->
+  | `SetPage path -> {model with page_path= path}
+  | `SubmitComment {author; body; x; y; page} ->
       let x_pct =
         try float_of_string x with
         | _ -> -1.0
@@ -91,22 +98,23 @@ let update req model = function
         (`CommentAdded (model.mock_id, _comment.id)) ;
       let comments = load_comments ctx model.mock_id in
       {model with comments; author_name= author}
-  | ResolveComment id ->
+  | `ResolveComment id ->
       let ctx = Well.rpc_ctx req in
       ignore (Comment_access.resolve ~ctx ~id) ;
       Well.publish Events.comment_event (`CommentResolved (model.mock_id, id)) ;
       let comments = load_comments ctx model.mock_id in
       {model with comments}
-  | DeleteComment id ->
+  | `DeleteComment id ->
       let ctx = Well.rpc_ctx req in
       ignore (Comment_access.delete ~ctx ~id) ;
       Well.publish Events.comment_event (`CommentDeleted (model.mock_id, id)) ;
       let comments = load_comments ctx model.mock_id in
       {model with comments}
-  | Refresh ->
-      let ctx = Well.rpc_ctx req in
-      let comments = load_comments ctx model.mock_id in
-      {model with comments}
+  | `CommentAdded (mock_id, _)
+  | `CommentResolved (mock_id, _)
+  | `CommentDeleted (mock_id, _) ->
+      if mock_id = model.mock_id then refresh_comments req model
+      else model
 
 let handle_params _req model = model
 
@@ -142,7 +150,7 @@ let comment_form_view _model =
 
 let user_name_form_view _model =
   let open Html in
-  <form class_="comment-name-prompt" id="comment-name-prompt">
+  <div class_="comment-name-prompt" id="comment-name-prompt">
     <p>(txt "Aby komentować podaj swoje imię")</p>
     <div class_="name-prompt-row">
       <input type_="text" id="name-prompt-input" placeholder="Twoje imię..." />
@@ -150,7 +158,7 @@ let user_name_form_view _model =
         (txt "OK")
       </button>
     </div>
-  </form>
+  </div>
 
 let view model =
   let open Html in

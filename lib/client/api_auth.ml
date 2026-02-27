@@ -1,4 +1,4 @@
-(* API auth — Bearer token middleware and admin key check *)
+(* API auth — Bearer token middleware and user auth helpers *)
 
 module ProjectCtx = Well.Context(struct
   type t = Project_access.Project.t option
@@ -32,16 +32,17 @@ let require_api_key : Well.middleware = fun next req ->
     | Some project ->
       next (ProjectCtx.set (Some project) req))
 
-let require_admin_key : Well.middleware = fun next req ->
-  match extract_bearer req with
-  | None ->
-    Well.json (`Assoc [("error", `String "Missing Authorization header")]) |> Well.status 401
-  | Some key ->
-    let admin_key = match Sys.getenv_opt "SMOCK_ADMIN_KEY" with
-      | Some k -> k
-      | None -> failwith "SMOCK_ADMIN_KEY not set"
-    in
-    if key = admin_key then
-      next req
-    else
-      Well.json (`Assoc [("error", `String "Invalid admin key")]) |> Well.status 401
+let require_auth (handler : Well.request -> 'a) (req : Well.request) : 'a =
+  match Well.current_user req with
+  | Some _ -> handler req
+  | None -> raise (Well.Auth.Auth_denied (401, "Login required"))
+
+let current_user_id (req : Well.request) : int =
+  match Well.current_user req with
+  | Some uid -> int_of_string uid
+  | None -> raise (Well.Auth.Auth_denied (401, "Login required"))
+
+let ensure_project_owner (req : Well.request) (project : Project_access.Project.t) =
+  let uid = current_user_id req in
+  if project.user_id <> uid then
+    raise (Well.Auth.Auth_denied (403, "Not your project"))

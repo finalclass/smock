@@ -12,6 +12,13 @@ let createElement ?title:(page_title = "Smock") ?req ?(children = []) () =
        | None -> txt "")
     | None -> txt ""
   in
+  let nav = match req with
+    | Some r ->
+      (match Well.current_user r with
+       | Some _ -> raw {|<nav class="header-nav"><a href="/">Projects</a></nav>|}
+       | None -> txt "")
+    | None -> txt ""
+  in
   let page = <html lang="en">
     <head>
       <meta charset="utf-8" />
@@ -24,6 +31,7 @@ let createElement ?title:(page_title = "Smock") ?req ?(children = []) () =
         <a href="/" class_="logo">
           <img src="/static/logo.png" alt="Smock" class_="logo-img" />
         </a>
+        nav
         user_display
       </header>
       <main class_="admin-main">(children |> cat |> raw)</main>

@@ -1,8 +1,9 @@
 Well.get "/" @@
-Well.Auth.require_grant "admin" (fun req ->
+Api_auth.require_auth (fun req ->
 let open Html in
 let ctx = Well.rpc_ctx req in
-let result = Project_access.list ~ctx ~limit:0 in
+let user_id = Api_auth.current_user_id req in
+let result = Project_access.list_by_user ~ctx ~user_id in
 <Layout title="Smock — Projects" req=req>
 <div class_="projects-page">
   <div class_="page-header">
@@ -35,8 +36,9 @@ let result = Project_access.list ~ctx ~limit:0 in
 ;;
 
 Well.post "/projects" @@
-Well.Auth.require_grant "admin" (fun req ->
+Api_auth.require_auth (fun req ->
 let ctx = Well.rpc_ctx req in
+let user_id = Api_auth.current_user_id req in
 let name = Well.form req "name" in
-ignore (Project_access.create ~ctx ~name);
+ignore (Project_access.create ~ctx ~name ~user_id);
 Well.redirect "/")

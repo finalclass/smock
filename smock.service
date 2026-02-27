@@ -4,18 +4,18 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=/srv/smock
-ExecStart=/srv/smock/bin/smock
+WorkingDirectory=/opt/smock
+ExecStart=/opt/smock/bin/smock
 Restart=on-failure
 RestartSec=3
 
-EnvironmentFile=/srv/smock/.env
+EnvironmentFile=/opt/smock/.env
 
 # Hardening
 NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=yes
-ReadWritePaths=/srv/smock/data
+ReadWritePaths=/opt/smock
 PrivateTmp=yes
 
 # Allow binding to privileged ports (443, 80)

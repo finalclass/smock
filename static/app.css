@@ -35,6 +35,9 @@ a:hover { text-decoration: underline; }
 .logo:hover { text-decoration: none; }
 .logo-img { height: 56px; width: auto; }
 .login-logo { display: block; width: 160px; height: auto; margin: 0 auto 1.5rem; }
+.header-nav { display: flex; align-items: center; gap: 1rem; font-size: 0.875rem; }
+.header-nav a { color: var(--muted); }
+.header-nav a:hover { color: var(--accent); }
 .header-user { display: flex; align-items: center; gap: 0.75rem; font-size: 0.875rem; color: var(--muted); }
 .logout-btn { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 0.875rem; padding: 0; }
 .logout-btn:hover { text-decoration: underline; }
@@ -132,6 +135,7 @@ a:hover { text-decoration: underline; }
   border-radius: var(--radius); padding: 0.5rem 0.75rem; font-size: 0.875rem;
   margin-bottom: 0.5rem;
 }
+.auth-link { text-align: center; margin-top: 1rem; font-size: 0.875rem; color: var(--muted); }
 
 /* Client pages */
 .client-body { background: #f0f0f0; }
