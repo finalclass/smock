@@ -9,11 +9,12 @@
    (run mlx-pp %{input-file}))))
 
 (pin
- (url "file:///home/sel/Documents/well")
+ (url "git+ssh://git@github.com/finalclass/well.git")
  (package (name well)))
 
 (package
  (name smock)
+ (version 0.0.1)
  (allow_empty)
  (synopsis "A well web application")
  (depends
