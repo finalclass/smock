@@ -402,37 +402,47 @@ document.addEventListener('DOMContentLoaded', () => {
   renderPins();
 
   // --- Author name flow (localStorage with 1-day expiry) ---
+  // LiveView content loads via WebSocket AFTER DOMContentLoaded,
+  // so we use MutationObserver to wait for the form elements to appear.
 
-  const namePrompt = document.getElementById('comment-name-prompt');
-  const formInner = document.getElementById('comment-form-inner');
-  const authorInput = document.getElementById('comment-author') as HTMLInputElement | null;
+  let authorFlowInitialized = false;
 
-  function checkAuthor() {
-    const stored = localStorage.getItem('smock_author');
-    if (stored) {
-      try {
-        const data = JSON.parse(stored);
-        const age = Date.now() - data.timestamp;
-        if (age < 86400000 && data.name) {
-          if (namePrompt) namePrompt.style.display = 'none';
-          if (formInner) formInner.style.display = '';
-          if (authorInput) authorInput.value = data.name;
-          return;
-        }
-      } catch (_) {}
-      localStorage.removeItem('smock_author');
+  function initAuthorFlow() {
+    if (authorFlowInitialized) return;
+
+    const namePrompt = document.getElementById('comment-name-prompt');
+    const formInner = document.getElementById('comment-form-inner');
+    const authorInput = document.getElementById('comment-author') as HTMLInputElement | null;
+    const nameBtn = document.getElementById('name-prompt-btn');
+    const nameInput = document.getElementById('name-prompt-input') as HTMLInputElement | null;
+
+    // Wait until all elements exist
+    if (!namePrompt || !formInner || !authorInput || !nameBtn || !nameInput) return;
+
+    authorFlowInitialized = true;
+
+    function checkAuthor() {
+      const stored = localStorage.getItem('smock_author');
+      if (stored) {
+        try {
+          const data = JSON.parse(stored);
+          const age = Date.now() - data.timestamp;
+          if (age < 86400000 && data.name) {
+            namePrompt.style.display = 'none';
+            formInner.style.display = '';
+            authorInput.value = data.name;
+            return;
+          }
+        } catch (_) {}
+        localStorage.removeItem('smock_author');
+      }
+      namePrompt.style.display = '';
+      formInner.style.display = 'none';
     }
-    if (namePrompt) namePrompt.style.display = '';
-    if (formInner) formInner.style.display = 'none';
-  }
-  checkAuthor();
+    checkAuthor();
 
-  const nameBtn = document.getElementById('name-prompt-btn');
-  const nameInput = document.getElementById('name-prompt-input') as HTMLInputElement | null;
-
-  if (nameBtn && nameInput) {
     function submitName() {
-      const name = nameInput!.value.trim();
+      const name = nameInput.value.trim();
       if (!name) return;
       localStorage.setItem('smock_author', JSON.stringify({ name, timestamp: Date.now() }));
       checkAuthor();
@@ -442,4 +452,13 @@ document.addEventListener('DOMContentLoaded', () => {
       if (e.key === 'Enter') submitName();
     });
   }
+
+  // Try immediately (in case elements exist)
+  initAuthorFlow();
+
+  // Also observe for LiveView content loading
+  const authorObserver = new MutationObserver(() => {
+    if (!authorFlowInitialized) initAuthorFlow();
+  });
+  authorObserver.observe(panel, { childList: true, subtree: true });
 });

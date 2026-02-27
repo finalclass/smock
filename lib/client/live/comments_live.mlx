@@ -33,6 +33,7 @@ type msg =
 [@@deriving yojson]
 
 let persistence = Well.LiveView.Ephemeral
+let subscriptions = [Well.topic_name Events.comment_event]
 
 let load_comments ctx mock_id =
   let result = Comment_access.list_by_mock ~ctx ~mock_id in
@@ -62,8 +63,7 @@ let init req props =
     try props |> member "entry_file" |> to_string with
     | _ -> ""
   in
-  ({mock_id; page_path= entry_file; comments; author_name= ""},
-   [Well.topic_name Events.comment_event])
+  {mock_id; page_path= entry_file; comments; author_name= ""}
 
 let refresh_comments req model =
   let ctx = Well.rpc_ctx req in
@@ -171,9 +171,6 @@ let view model =
   let active_comments =
     List.filter (fun (c : comment_entry) -> not c.resolved) page_comments
   in
-  let resolved_comments =
-    List.filter (fun (c : comment_entry) -> c.resolved) page_comments
-  in
   <div class_="comments-live">
     <div class_="comments-scroll">
       <div class_="comments-header">
@@ -183,8 +180,9 @@ let view model =
         </span>
       </div>
       <div class_="comment-list">
-        ( active_comments
-        |> List.map (fun (c : comment_entry) ->
+        (each ~id:"comments" active_comments
+          ~key:(fun c -> string_of_int c.id)
+          (fun (c : comment_entry) ->
             <div
               class_="comment-item"
               attrs=[ ("data-comment-id", string_of_int c.id)
@@ -200,36 +198,14 @@ let view model =
               <p class_="comment-body">(txt c.body)</p>
               <div class_="comment-actions">
                 <button
-                  data_lv_click=(Printf.sprintf {|["ResolveComment",%d]|} c.id)
-                  class_="btn-resolve">
-                  (txt "Resolve")
-                </button>
-                <button
-                  data_lv_click=(Printf.sprintf {|["DeleteComment",%d]|} c.id)
+                  data_lv_click=(Printf.sprintf "[&quot;DeleteComment&quot;,%d]" c.id)
                   class_="btn-delete">
-                  (txt "Delete")
+                  (txt "Usuń")
                 </button>
               </div>
-            </div> )
-        |> cat
-        |> raw )
+            </div> ))
       </div>
-      ( if resolved_comments <> []
-        then
-          <div class_="resolved-section">
-            <h4>(txt "Resolved")</h4>
-            ( resolved_comments
-            |> List.map (fun (c : comment_entry) ->
-                <div class_="comment-item">
-                  <div class_="comment-meta">
-                    <strong>(txt c.author_name)</strong>
-                  </div>
-                  <p class_="comment-body">(txt c.body)</p>
-                </div> )
-            |> cat
-            |> raw )
-          </div>
-        else <span>(txt "")</span> )
+      (txt "")
     </div>
     <div
       class_="comment-form-bottom"
