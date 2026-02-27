@@ -33,6 +33,7 @@ type msg =
 [@@deriving yojson]
 
 let persistence = Well.LiveView.Ephemeral
+let subscriptions = [Well.topic_name Events.comment_event]
 
 let load_comments ctx mock_id =
   let result = Comment_access.list_by_mock ~ctx ~mock_id in
@@ -62,8 +63,7 @@ let init req props =
     try props |> member "entry_file" |> to_string with
     | _ -> ""
   in
-  ({mock_id; page_path= entry_file; comments; author_name= ""},
-   [Well.topic_name Events.comment_event])
+  {mock_id; page_path= entry_file; comments; author_name= ""}
 
 let refresh_comments req model =
   let ctx = Well.rpc_ctx req in
