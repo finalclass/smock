@@ -9,7 +9,7 @@
    (run mlx-pp %{input-file}))))
 
 (pin
- (url "git+ssh://git@github.com/finalclass/well.git")
+ (url "git+https://github.com/finalclass/well.git")
  (package (name well)))
 
 (package

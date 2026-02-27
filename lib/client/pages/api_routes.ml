@@ -94,3 +94,32 @@ let () =
   let mock_id = int_of_string (Well.param req "id") in
   ignore (Mock_manager_impl.delete_mock ~ctx ~mock_id);
   Well.json (`Assoc [("ok", `Bool true)])
+
+let () =
+  (* GET /api/mocks/:mock_id/comments — list comments for a mock (requires api_key) *)
+  Well.get ~middleware:[Api_auth.require_api_key] "/api/mocks/:mock_id/comments" @@ fun req ->
+  let ctx = Well.rpc_ctx req in
+  let mock_id = int_of_string (Well.param req "mock_id") in
+  let project = match Api_auth.get_project req with
+    | Some p -> p
+    | None -> failwith "No project in context"
+  in
+  let mock = Mock_access.get ~ctx ~id:mock_id in
+  if mock.project_id <> project.id then
+    Well.json (`Assoc [("error", `String "Access denied")]) |> Well.status 403
+  else
+    let result = Comment_access.list_by_mock ~ctx ~mock_id in
+    let comments_json = List.map (fun (c : Comment_access.Comment.t) ->
+      `Assoc [
+        ("id", `Int c.id);
+        ("mock_id", `Int c.mock_id);
+        ("page_path", `String c.page_path);
+        ("x_pct", `Float c.x_pct);
+        ("y_pct", `Float c.y_pct);
+        ("author_name", `String c.author_name);
+        ("body", `String c.body);
+        ("resolved", `Bool c.resolved);
+        ("created_at", `String c.created_at);
+      ]
+    ) result.comments in
+    Well.json (`Assoc [("comments", `List comments_json)])
