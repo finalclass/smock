@@ -22,6 +22,6 @@
 
 (source
  (fetch
-  (url file:///home/sel/Documents/well)))
+  (url git+https://github.com/finalclass/well.git)))
 
 (dev)
