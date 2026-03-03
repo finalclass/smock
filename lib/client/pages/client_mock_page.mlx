@@ -20,11 +20,11 @@ let base_url = "/p/" ^ token ^ "/" ^ mock_slug ^ "/f/" in
     <img src="/static/logo.png" alt="Smock" class_="toolbar-logo" />
     <a href=("/p/" ^ token) class_="viewer-back">(txt project.name)</a>
     <h2 class_="viewer-title">(txt mock.name)</h2>
-    <div class_="viewer-pages">
+    (raw {|<select class="page-select" id="page-select">|})
       (pages |> List.map (fun page ->
-        (raw (Printf.sprintf {|<button class="page-tab" data-page="%s">%s</button>|} (Html.escape_html page) (Html.escape_html (Filename.basename page))))
+        (raw (Printf.sprintf {|<option value="%s"%s>%s</option>|} (Html.escape_html page) (if page = mock.entry_file then " selected" else "") (Html.escape_html (Filename.basename page))))
       ) |> cat |> raw)
-    </div>
+    (raw {|</select>|})
     <div class_="viewer-controls">
       (raw {|<button class="viewport-btn active" data-viewport="desktop">Desktop</button>|})
       (raw {|<button class="viewport-btn" data-viewport="mobile">Mobile</button>|})

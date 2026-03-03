@@ -175,13 +175,11 @@ a:hover { text-decoration: underline; }
 .toolbar-logo { height: 32px; width: auto; }
 .viewer-back { font-size: 0.8rem; color: var(--muted); }
 .viewer-title { font-size: 1rem; font-weight: 600; }
-.viewer-pages { display: flex; gap: 0.25rem; margin-left: auto; }
-.page-tab {
-  padding: 0.375rem 0.75rem; border: 1px solid var(--border);
-  border-radius: 4px; background: transparent; cursor: pointer;
-  font-size: 0.8rem;
+.page-select {
+  margin-left: auto; padding: 0.375rem 0.75rem; border: 1px solid var(--border);
+  border-radius: 4px; background: var(--card-bg); cursor: pointer;
+  font-size: 0.8rem; max-width: 240px; font-family: inherit;
 }
-.page-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 .viewer-controls { display: flex; gap: 0.25rem; margin-left: 1rem; }
 .viewport-btn {
   padding: 0.375rem 0.75rem; border: 1px solid var(--border);

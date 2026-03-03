@@ -71,11 +71,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (page && page !== currentPage) {
           currentPage = page;
           syncPageInput();
-          // Update tab highlight
-          pageTabs.forEach(t => t.classList.remove('active'));
-          pageTabs.forEach(t => {
-            if ((t as HTMLElement).dataset.page === page) t.classList.add('active');
-          });
+          // Update select
+          if (pageSelect) pageSelect.value = page;
           clearPinState();
           pushLiveEvent('SetPage', page);
         }
@@ -84,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Page navigation
-  const pageTabs = document.querySelectorAll('.page-tab');
+  const pageSelect = document.getElementById('page-select') as HTMLSelectElement | null;
   let currentPage = entryFile;
 
   function syncPageInput() {
@@ -111,20 +108,16 @@ document.addEventListener('DOMContentLoaded', () => {
     exitPlacingMode();
   }
 
-  pageTabs.forEach(tab => {
-    const btn = tab as HTMLButtonElement;
-    if (btn.dataset.page === entryFile) btn.classList.add('active');
-    btn.addEventListener('click', () => {
-      const page = btn.dataset.page || '';
+  if (pageSelect) {
+    pageSelect.addEventListener('change', () => {
+      const page = pageSelect.value;
       currentPage = page;
       syncPageInput();
       iframe.src = baseUrl + page;
-      pageTabs.forEach(t => t.classList.remove('active'));
-      btn.classList.add('active');
       clearPinState();
       pushLiveEvent('SetPage', page);
     });
-  });
+  }
 
   // Viewport toggle
   const viewportBtns = document.querySelectorAll('.viewport-btn');
@@ -351,10 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
       currentPage = page;
       syncPageInput();
       iframe.src = baseUrl + page;
-      pageTabs.forEach(t => t.classList.remove('active'));
-      pageTabs.forEach(t => {
-        if ((t as HTMLElement).dataset.page === page) t.classList.add('active');
-      });
+      if (pageSelect) pageSelect.value = page;
       clearPinState();
       pushLiveEvent('SetPage', page);
       // After load, scroll to pin and highlight it
