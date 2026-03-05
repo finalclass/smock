@@ -8,6 +8,9 @@ let visible_mocks = List.filter (fun (m : Mock_access.Mock.t) -> m.status <> "dr
 <Client_layout title=(project.name ^ " — Smock")>
 <div class_="client-project">
   <header class_="client-header">
+    <a href="/" class_="client-logo-link">
+      <img src="/static/logo.png" alt="Smock" class_="client-logo" />
+    </a>
     <h1>(txt project.name)</h1>
   </header>
   (match visible_mocks with

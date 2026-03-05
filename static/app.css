@@ -138,10 +138,14 @@ a:hover { text-decoration: underline; }
 .auth-link { text-align: center; margin-top: 1rem; font-size: 0.875rem; color: var(--muted); }
 
 /* Client pages */
-.client-body { background: #f0f0f0; }
+.client-body { background: #f0f0f0; position: relative; }
 .client-project { max-width: 64rem; margin: 0 auto; padding: 2rem 1rem; }
-.client-header { margin-bottom: 2rem; text-align: center; }
-.client-header h1 { font-size: 2rem; }
+.client-header { margin-bottom: 2rem; }
+.client-header h1 { font-size: 2rem; text-align: center; }
+.client-logo-link { position: absolute; top: 1rem; left: 1rem; }
+.client-logo { height: 24px; width: auto; opacity: 0.5; transition: opacity 0.2s; }
+.client-logo:hover { opacity: 1; }
+.toolbar-logo-link { display: flex; align-items: center; }
 
 /* Mock grid */
 .mock-grid {
@@ -300,6 +304,9 @@ a:hover { text-decoration: underline; }
 }
 .btn-resolve { color: var(--success); }
 .btn-delete { color: var(--danger); }
+.btn-delete-active { color: #fff; background: var(--danger); border-radius: 3px; padding: 0 0.375rem; }
+.btn-cancel-delete { color: var(--muted); }
+.delete-confirm-group { display: inline-flex; gap: 0.375rem; }
 .resolved-section { margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border); }
 .resolved-section h4 { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.5rem; }
 
@@ -324,4 +331,58 @@ live-view.lv-loading { opacity: 0.5; pointer-events: none; }
 }
 .comment-item.comment-highlight {
   background: #dbeafe;
+}
+
+/* Comments view toggle (segmented buttons) */
+.comments-view-toggle {
+  display: flex;
+  margin-left: auto;
+}
+.toggle-btn {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+.toggle-btn:first-child {
+  border-radius: 4px 0 0 4px;
+}
+.toggle-btn:last-child {
+  border-radius: 0 4px 4px 0;
+  border-left: none;
+}
+.toggle-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  cursor: default;
+}
+
+/* Hide resolved checkbox */
+.hide-resolved-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.7rem;
+  color: var(--muted);
+  cursor: pointer;
+  margin-left: auto;
+  white-space: nowrap;
+}
+.hide-resolved-toggle input { cursor: pointer; }
+.comments-header { flex-wrap: wrap; }
+
+/* Comment page group headers */
+.comment-page-group-header {
+  position: sticky;
+  top: 0;
+  background: #f3f4f6;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  z-index: 1;
 }

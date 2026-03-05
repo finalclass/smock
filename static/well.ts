@@ -351,7 +351,7 @@ export class Well {
           if (lv) {
             const html = msg.html as string;
             lv.cachedHtml = html;
-            lv.el.innerHTML = html;
+            this.morph(lv.el, html);
             lv.el.classList.remove("lv-loading");
             this.mountHooks(lv.el);
           }

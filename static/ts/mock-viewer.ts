@@ -264,9 +264,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const x = el.dataset.commentX;
       const y = el.dataset.commentY;
       const id = el.dataset.commentId;
+      const page = el.dataset.commentPage;
       if (!x || !y) return;
       // Skip comments without pin position
       if (parseFloat(x) < 0 || parseFloat(y) < 0) return;
+      // Only show pins for current page
+      if (page && page !== currentPage) return;
       pinIndex++;
       const pin = document.createElement('div');
       pin.className = 'comment-pin';
@@ -377,10 +380,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!item) return;
     const x = parseFloat(item.dataset.commentX || '-1');
     const y = parseFloat(item.dataset.commentY || '-1');
-    if (x < 0 || y < 0) return;
     const page = item.dataset.commentPage || '';
     const id = item.dataset.commentId || '';
-    navigateToComment(page, x, y, id);
+    const hasPin = x >= 0 && y >= 0;
+    if (hasPin) {
+      navigateToComment(page, x, y, id);
+    } else if (page && page !== currentPage) {
+      // No pin but different page — just navigate there
+      currentPage = page;
+      syncPageInput();
+      iframe.src = baseUrl + page;
+      if (pageSelect) pageSelect.value = page;
+      clearPinState();
+      pushLiveEvent('SetPage', page);
+    }
   });
 
   // Observe comment list changes → re-render pins
@@ -392,12 +405,13 @@ document.addEventListener('DOMContentLoaded', () => {
   renderPins();
 
   // --- Author name flow (localStorage with 1-day expiry) ---
-
-  const namePrompt = document.getElementById('comment-name-prompt');
-  const formInner = document.getElementById('comment-form-inner');
-  const authorInput = document.getElementById('comment-author') as HTMLInputElement | null;
+  // Elements are inside LiveView and may not exist yet at DOMContentLoaded.
+  // Use dynamic queries and event delegation on the panel.
 
   function checkAuthor() {
+    const namePrompt = document.getElementById('comment-name-prompt');
+    const formInner = document.getElementById('comment-form-inner');
+    const authorInput = document.getElementById('comment-author') as HTMLInputElement | null;
     const stored = localStorage.getItem('smock_author');
     if (stored) {
       try {
@@ -415,21 +429,25 @@ document.addEventListener('DOMContentLoaded', () => {
     if (namePrompt) namePrompt.style.display = '';
     if (formInner) formInner.style.display = 'none';
   }
-  checkAuthor();
 
-  const nameBtn = document.getElementById('name-prompt-btn');
-  const nameInput = document.getElementById('name-prompt-input') as HTMLInputElement | null;
-
-  if (nameBtn && nameInput) {
-    function submitName() {
-      const name = nameInput!.value.trim();
-      if (!name) return;
-      localStorage.setItem('smock_author', JSON.stringify({ name, timestamp: Date.now() }));
-      checkAuthor();
-    }
-    nameBtn.addEventListener('click', submitName);
-    nameInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') submitName();
-    });
+  function submitName() {
+    const nameInput = document.getElementById('name-prompt-input') as HTMLInputElement | null;
+    const name = nameInput?.value.trim();
+    if (!name) return;
+    localStorage.setItem('smock_author', JSON.stringify({ name, timestamp: Date.now() }));
+    checkAuthor();
   }
+
+  // Event delegation — works even when elements are added later by LiveView
+  panel.addEventListener('click', (e) => {
+    if ((e.target as Element).id === 'name-prompt-btn') submitName();
+  });
+  panel.addEventListener('keydown', (e) => {
+    if ((e.target as Element).id === 'name-prompt-input' && e.key === 'Enter') submitName();
+  });
+
+  // Run checkAuthor now (likely no-op) and again when LiveView renders content
+  checkAuthor();
+  const obs = new MutationObserver(() => checkAuthor());
+  obs.observe(panel, { childList: true, subtree: true });
 });

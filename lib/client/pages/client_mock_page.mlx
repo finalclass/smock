@@ -17,7 +17,7 @@ let base_url = "/p/" ^ token ^ "/" ^ mock_slug ^ "/f/" in
 (raw (Printf.sprintf {|<div class="viewer" id="mock-viewer" data-mock-id="%d" data-token="%s" data-slug="%s" data-base-url="%s" data-entry-file="%s">|}
   mock.id (Html.escape_html token) (Html.escape_html mock_slug) (Html.escape_html base_url) (Html.escape_html mock.entry_file)))
   <div class_="viewer-toolbar">
-    <img src="/static/logo.png" alt="Smock" class_="toolbar-logo" />
+    <a href="/" class_="toolbar-logo-link"><img src="/static/logo.png" alt="Smock" class_="toolbar-logo" /></a>
     <a href=("/p/" ^ token) class_="viewer-back">(txt project.name)</a>
     <h2 class_="viewer-title">(txt mock.name)</h2>
     (raw {|<select class="page-select" id="page-select">|})

@@ -13,7 +13,10 @@ type model =
   { mock_id: int
   ; page_path: string
   ; comments: comment_entry list
-  ; author_name: string }
+  ; author_name: string
+  ; show_all: bool
+  ; hide_resolved: bool
+  ; confirm_delete: int option }
 [@@deriving yojson]
 
 type submit_comment =
@@ -29,7 +32,10 @@ type msg =
   | `SetPage of string
   | `SubmitComment of submit_comment
   | `ResolveComment of int
-  | `DeleteComment of int ]
+  | `DeleteComment of int
+  | `ConfirmDelete of int
+  | `SetShowAll of bool
+  | `SetHideResolved of bool ]
 [@@deriving yojson]
 
 let persistence = Well.LiveView.Ephemeral
@@ -62,7 +68,7 @@ let init req props =
     try props |> member "entry_file" |> to_string with
     | _ -> ""
   in
-  ({mock_id; page_path= entry_file; comments; author_name= ""},
+  ({mock_id; page_path= entry_file; comments; author_name= ""; show_all= false; hide_resolved= false; confirm_delete= None},
    [Well.topic_name Events.comment_event])
 
 let refresh_comments req model =
@@ -71,6 +77,8 @@ let refresh_comments req model =
   {model with comments}
 
 let update req model = function
+  | `SetShowAll v -> {model with show_all= v}
+  | `SetHideResolved v -> {model with hide_resolved= v}
   | `SetPage path -> {model with page_path= path}
   | `SubmitComment {author; body; x; y; page} ->
       let x_pct =
@@ -104,12 +112,17 @@ let update req model = function
       Well.publish Events.comment_event (`CommentResolved (model.mock_id, id)) ;
       let comments = load_comments ctx model.mock_id in
       {model with comments}
+  | `ConfirmDelete id ->
+      if id > 0 then {model with confirm_delete= Some id}
+      else {model with confirm_delete= None}
   | `DeleteComment id ->
-      let ctx = Well.rpc_ctx req in
-      ignore (Comment_access.delete ~ctx ~id) ;
-      Well.publish Events.comment_event (`CommentDeleted (model.mock_id, id)) ;
-      let comments = load_comments ctx model.mock_id in
-      {model with comments}
+      if model.confirm_delete = Some id then begin
+        let ctx = Well.rpc_ctx req in
+        ignore (Comment_access.delete ~ctx ~id) ;
+        Well.publish Events.comment_event (`CommentDeleted (model.mock_id, id)) ;
+        let comments = load_comments ctx model.mock_id in
+        {model with comments; confirm_delete= None}
+      end else model
   | `CommentAdded (mock_id, _)
   | `CommentResolved (mock_id, _)
   | `CommentDeleted (mock_id, _) ->
@@ -160,19 +173,90 @@ let user_name_form_view _model =
     </div>
   </div>
 
+let render_active_comment ~confirm_delete (c : comment_entry) =
+  let open Html in
+  let confirming = confirm_delete = Some c.id in
+  <div
+    class_="comment-item"
+    attrs=[ ("data-comment-id", string_of_int c.id)
+          ; ("data-comment-x", Printf.sprintf "%.1f" c.x_pct)
+          ; ("data-comment-y", Printf.sprintf "%.1f" c.y_pct)
+          ; ("data-comment-page", c.page_path) ]>
+    <div class_="comment-meta">
+      <strong>(txt c.author_name)</strong>
+      <span class_="comment-page">
+        (txt (Filename.basename c.page_path))
+      </span>
+    </div>
+    <p class_="comment-body">(txt c.body)</p>
+    <div class_="comment-actions">
+      <button
+        data_lv_click=(Html.escape_html (Printf.sprintf {|["ResolveComment",%d]|} c.id))
+        class_="btn-resolve">
+        (txt "Resolve")
+      </button>
+      ( if confirming then
+          <span class_="delete-confirm-group">
+            <button
+              data_lv_click=(Html.escape_html (Printf.sprintf {|["DeleteComment",%d]|} c.id))
+              class_="btn-delete btn-delete-active">
+              (txt "Sure?")
+            </button>
+            <button
+              data_lv_click=(Html.escape_html {|["ConfirmDelete",0]|})
+              class_="btn-cancel-delete">
+              (txt "Cancel")
+            </button>
+          </span>
+        else
+          <button
+            data_lv_click=(Html.escape_html (Printf.sprintf {|["ConfirmDelete",%d]|} c.id))
+            class_="btn-delete">
+            (txt "Delete")
+          </button> )
+    </div>
+  </div>
+
+let render_resolved_comment (c : comment_entry) =
+  let open Html in
+  <div class_="comment-item">
+    <div class_="comment-meta">
+      <strong>(txt c.author_name)</strong>
+    </div>
+    <p class_="comment-body">(txt c.body)</p>
+  </div>
+
+let group_by_page comments =
+  let pages =
+    List.sort_uniq String.compare
+      (List.map (fun (c : comment_entry) -> c.page_path) comments)
+  in
+  List.map
+    (fun page ->
+      (page, List.filter (fun (c : comment_entry) -> c.page_path = page) comments) )
+    pages
+
 let view model =
   let open Html in
-  let page_comments =
-    List.filter
-      (fun (c : comment_entry) ->
-        model.page_path = "" || c.page_path = model.page_path )
-      model.comments
+  let visible_comments =
+    if model.show_all then model.comments
+    else
+      List.filter
+        (fun (c : comment_entry) ->
+          model.page_path = "" || c.page_path = model.page_path )
+        model.comments
   in
   let active_comments =
-    List.filter (fun (c : comment_entry) -> not c.resolved) page_comments
+    List.filter (fun (c : comment_entry) -> not c.resolved) visible_comments
   in
   let resolved_comments =
-    List.filter (fun (c : comment_entry) -> c.resolved) page_comments
+    List.filter (fun (c : comment_entry) -> c.resolved) visible_comments
+  in
+  let active_groups =
+    if model.show_all then group_by_page active_comments else []
+  in
+  let resolved_groups =
+    if model.show_all then group_by_page resolved_comments else []
   in
   <div class_="comments-live">
     <div class_="comments-scroll">
@@ -181,53 +265,63 @@ let view model =
         <span class_="comment-count">
           (txt (string_of_int (List.length active_comments)))
         </span>
+        <div class_="comments-view-toggle">
+          <button
+            class_=(if model.show_all then "toggle-btn" else "toggle-btn active")
+            data_lv_click=(Html.escape_html {|["SetShowAll",false]|})>
+            (txt "Ta strona")
+          </button>
+          <button
+            class_=(if model.show_all then "toggle-btn active" else "toggle-btn")
+            data_lv_click=(Html.escape_html {|["SetShowAll",true]|})>
+            (txt "Wszystkie")
+          </button>
+        </div>
+        <label class_="hide-resolved-toggle">
+          <input
+            type_="checkbox"
+            checked=model.hide_resolved
+            data_lv_click=(Html.escape_html
+              (Printf.sprintf {|["SetHideResolved",%s]|}
+                (if model.hide_resolved then "false" else "true"))) />
+          (txt "Hide resolved")
+        </label>
       </div>
       <div class_="comment-list">
-        ( active_comments
-        |> List.map (fun (c : comment_entry) ->
-            <div
-              class_="comment-item"
-              attrs=[ ("data-comment-id", string_of_int c.id)
-                    ; ("data-comment-x", Printf.sprintf "%.1f" c.x_pct)
-                    ; ("data-comment-y", Printf.sprintf "%.1f" c.y_pct)
-                    ; ("data-comment-page", c.page_path) ]>
-              <div class_="comment-meta">
-                <strong>(txt c.author_name)</strong>
-                <span class_="comment-page">
-                  (txt (Filename.basename c.page_path))
-                </span>
-              </div>
-              <p class_="comment-body">(txt c.body)</p>
-              <div class_="comment-actions">
-                <button
-                  data_lv_click=(Printf.sprintf {|["ResolveComment",%d]|} c.id)
-                  class_="btn-resolve">
-                  (txt "Resolve")
-                </button>
-                <button
-                  data_lv_click=(Printf.sprintf {|["DeleteComment",%d]|} c.id)
-                  class_="btn-delete">
-                  (txt "Delete")
-                </button>
-              </div>
-            </div> )
-        |> cat
-        |> raw )
-      </div>
-      ( if resolved_comments <> []
-        then
-          <div class_="resolved-section">
-            <h4>(txt "Resolved")</h4>
-            ( resolved_comments
-            |> List.map (fun (c : comment_entry) ->
-                <div class_="comment-item">
-                  <div class_="comment-meta">
-                    <strong>(txt c.author_name)</strong>
+        ( if model.show_all then
+            ( active_groups
+            |> List.map (fun (page, cs) ->
+                <div class_="comment-page-group">
+                  <div class_="comment-page-group-header">
+                    (txt (Filename.basename page))
                   </div>
-                  <p class_="comment-body">(txt c.body)</p>
+                  ( cs |> List.map (render_active_comment ~confirm_delete:model.confirm_delete) |> cat |> raw )
                 </div> )
             |> cat
             |> raw )
+          else
+            ( active_comments |> List.map (render_active_comment ~confirm_delete:model.confirm_delete) |> cat |> raw ) )
+      </div>
+      ( if resolved_comments <> [] && not model.hide_resolved
+        then
+          <div class_="resolved-section">
+            <h4>(txt "Resolved")</h4>
+            ( if model.show_all then
+                ( resolved_groups
+                |> List.map (fun (page, cs) ->
+                    <div class_="comment-page-group">
+                      <div class_="comment-page-group-header">
+                        (txt (Filename.basename page))
+                      </div>
+                      ( cs |> List.map render_resolved_comment |> cat |> raw )
+                    </div> )
+                |> cat
+                |> raw )
+              else
+                ( resolved_comments
+                |> List.map render_resolved_comment
+                |> cat
+                |> raw ) )
           </div>
         else <span>(txt "")</span> )
     </div>
