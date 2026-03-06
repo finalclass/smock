@@ -1,5 +1,3 @@
-// Mock viewer — iframe management, viewport toggle, page navigation, comment overlay
-
 document.addEventListener('DOMContentLoaded', () => {
   const viewer = document.getElementById('mock-viewer');
   if (!viewer) return;
@@ -12,8 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const baseUrl = viewer.dataset.baseUrl || '';
   const entryFile = viewer.dataset.entryFile || 'index.html';
 
-  // Helper: send event to LiveView via temporary data-lv-click element
-  // Uses JSON array format so Well parses it correctly: ["SetPage", "value"]
+  // @axiom: client-ui.md#pushowanie-eventów-do-liveview
   function pushLiveEvent(variant: string, arg: string) {
     const lv = document.querySelector('live-view');
     if (!lv) return;
@@ -24,8 +21,9 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.click();
     btn.remove();
   }
+  // /@axiom: client-ui.md#pushowanie-eventów-do-liveview
 
-  // --- Sync overlay with iframe scroll/size ---
+  // @axiom: comments.md#synchronizacja-overlay-z-iframe
 
   function syncOverlay() {
     try {
@@ -79,8 +77,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (_) {}
   });
+  // /@axiom: comments.md#synchronizacja-overlay-z-iframe
 
-  // Page navigation
+  // @axiom: client-ui.md#nawigacja-między-stronami
   const pageSelect = document.getElementById('page-select') as HTMLSelectElement | null;
   let currentPage = entryFile;
 
@@ -118,8 +117,9 @@ document.addEventListener('DOMContentLoaded', () => {
       pushLiveEvent('SetPage', page);
     });
   }
+  // /@axiom: client-ui.md#nawigacja-między-stronami
 
-  // Viewport toggle
+  // @axiom: client-ui.md#przełącznik-desktopmobile
   const viewportBtns = document.querySelectorAll('.viewport-btn');
   viewportBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -135,8 +135,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+  // /@axiom: client-ui.md#przełącznik-desktopmobile
 
-  // Comments panel toggle
+  // @axiom: client-ui.md#panel-komentarzy--toggle
   let panelVisible = true;
   toggle.addEventListener('click', () => {
     panelVisible = !panelVisible;
@@ -145,8 +146,9 @@ document.addEventListener('DOMContentLoaded', () => {
     toggle.classList.toggle('active', panelVisible);
     if (!panelVisible) exitPlacingMode();
   });
+  // /@axiom: client-ui.md#panel-komentarzy--toggle
 
-  // --- Placing mode (pin placement) ---
+  // @axiom: comments.md#placement-pinów
 
   let placingMode = false;
 
@@ -252,8 +254,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }, 0);
   });
+  // /@axiom: comments.md#placement-pinów
 
-  // --- Pin rendering and hover interactions ---
+  // @axiom: comments.md#renderowanie-pinów-na-overlay
 
   function renderPins() {
     overlay.querySelectorAll('.comment-pin:not(.comment-pin-preview)').forEach(el => el.remove());
@@ -303,8 +306,9 @@ document.addEventListener('DOMContentLoaded', () => {
       overlay.appendChild(pin);
     });
   }
+  // /@axiom: comments.md#renderowanie-pinów-na-overlay
 
-  // Hover on comment → highlight pin
+  // @axiom: comments.md#interakcja-pinów-z-komentarzami
   panel.addEventListener('mouseover', (e: MouseEvent) => {
     const item = (e.target as HTMLElement).closest('.comment-item[data-comment-id]') as HTMLElement | null;
     if (!item) return;
@@ -395,6 +399,7 @@ document.addEventListener('DOMContentLoaded', () => {
       pushLiveEvent('SetPage', page);
     }
   });
+  // /@axiom: comments.md#interakcja-pinów-z-komentarzami
 
   // Observe comment list changes → re-render pins
   const commentsLive = panel.querySelector('.comments-live') || panel;
@@ -404,9 +409,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initial render
   renderPins();
 
-  // --- Author name flow (localStorage with 1-day expiry) ---
-  // Elements are inside LiveView and may not exist yet at DOMContentLoaded.
-  // Use dynamic queries and event delegation on the panel.
+  // @axiom: auth.md#imię-autora-komentarzy
+  // @axiom: comments.md#formularz-imienia-name-prompt
 
   function checkAuthor() {
     const namePrompt = document.getElementById('comment-name-prompt');
@@ -441,6 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Event delegation — works even when elements are added later by LiveView
   panel.addEventListener('click', (e) => {
     if ((e.target as Element).id === 'name-prompt-btn') submitName();
+
   });
   panel.addEventListener('keydown', (e) => {
     if ((e.target as Element).id === 'name-prompt-input' && e.key === 'Enter') submitName();
@@ -450,4 +455,6 @@ document.addEventListener('DOMContentLoaded', () => {
   checkAuthor();
   const obs = new MutationObserver(() => checkAuthor());
   obs.observe(panel, { childList: true, subtree: true });
+  // /@axiom: comments.md#formularz-imienia-name-prompt
+  // /@axiom: auth.md#imię-autora-komentarzy
 });

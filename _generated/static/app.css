@@ -1,5 +1,6 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* @axiom: admin-ui.md#design-system--zmienne-css */
 :root {
   --bg: #fafafa;
   --fg: #1a1a1a;
@@ -23,6 +24,7 @@ body {
 
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
+/* /@axiom: admin-ui.md#design-system--zmienne-css */
 
 /* Admin header */
 .admin-header {
@@ -111,7 +113,7 @@ a:hover { text-decoration: underline; }
 .mock-meta { display: flex; gap: 0.75rem; font-size: 0.8rem; color: var(--muted); }
 .mock-actions { display: flex; gap: 0.5rem; align-items: center; }
 
-/* Status badges */
+/* @axiom: admin-ui.md#status-badges */
 .status {
   display: inline-block; padding: 0.125rem 0.5rem; border-radius: 9999px;
   font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em;
@@ -120,6 +122,7 @@ a:hover { text-decoration: underline; }
 .status-review { background: #dbeafe; color: #1e40af; }
 .status-approved { background: #d1fae5; color: #065f46; }
 .status-rejected { background: #fee2e2; color: #991b1b; }
+/* /@axiom: admin-ui.md#status-badges */
 
 /* Login */
 .login-page { max-width: 24rem; margin: 4rem auto; }
@@ -219,10 +222,12 @@ a:hover { text-decoration: underline; }
 .comments-panel {
   width: 320px; border-left: 1px solid var(--border); background: var(--card-bg);
   flex-shrink: 0; display: flex; flex-direction: column; overflow: hidden;
+  height: 90vh;
 }
 .comments-live {
-  display: flex; flex-direction: column; flex: 1; overflow: hidden;
+  height: 100%; display: flex; flex-direction: column; flex: 1; overflow: hidden;
 }
+.comment-list { height: 100%; }
 .comments-scroll {
   flex: 1; overflow-y: auto; padding: 1rem;
 }
@@ -309,9 +314,12 @@ a:hover { text-decoration: underline; }
 .delete-confirm-group { display: inline-flex; gap: 0.375rem; }
 .resolved-section { margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border); }
 .resolved-section h4 { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.5rem; }
+.comment-author-display { font-size: 0.8rem; color: var(--muted); padding: 0.5rem 0.75rem 0; }
+.comment-author-display strong { color: var(--fg); }
+.btn-change-name { background: none; border: none; cursor: pointer; color: var(--primary); font-size: 0.75rem; padding: 0; margin-left: 0.25rem; text-decoration: underline; }
 
 /* LiveView indicator */
-live-view { display: block; }
+live-view { display: block; height: 100%; }
 live-view.lv-loading { opacity: 0.5; pointer-events: none; }
 
 /* Pin markers on overlay */

@@ -1,3 +1,4 @@
+(* @axiom: comments.md#model-liveview-comments *)
 type comment_entry =
   { id: int
   ; page_path: string
@@ -39,6 +40,7 @@ type msg =
 [@@deriving yojson]
 
 let persistence = Well.LiveView.Ephemeral
+(* /@axiom: comments.md#model-liveview-comments *)
 
 let load_comments ctx mock_id =
   let result = Comment_access.list_by_mock ~ctx ~mock_id in
@@ -77,9 +79,12 @@ let refresh_comments req model =
   {model with comments}
 
 let update req model = function
+  (* @axiom: comments.md#filtrowanie-komentarzy *)
   | `SetShowAll v -> {model with show_all= v}
   | `SetHideResolved v -> {model with hide_resolved= v}
+  (* /@axiom: comments.md#filtrowanie-komentarzy *)
   | `SetPage path -> {model with page_path= path}
+  (* @axiom: comments.md#dodawanie-komentarza *)
   | `SubmitComment {author; body; x; y; page} ->
       let x_pct =
         try float_of_string x with
@@ -106,6 +111,8 @@ let update req model = function
         (`CommentAdded (model.mock_id, _comment.id)) ;
       let comments = load_comments ctx model.mock_id in
       {model with comments; author_name= author}
+  (* /@axiom: comments.md#dodawanie-komentarza *)
+  (* @axiom: comments.md#resolve-i-usunięcie-komentarza *)
   | `ResolveComment id ->
       let ctx = Well.rpc_ctx req in
       ignore (Comment_access.resolve ~ctx ~id) ;
@@ -123,16 +130,20 @@ let update req model = function
         let comments = load_comments ctx model.mock_id in
         {model with comments; confirm_delete= None}
       end else model
+  (* /@axiom: comments.md#resolve-i-usunięcie-komentarza *)
+  (* @axiom: comments.md#real-time-synchronizacja-komentarzy *)
   | `CommentAdded (mock_id, _)
   | `CommentResolved (mock_id, _)
   | `CommentDeleted (mock_id, _) ->
       if mock_id = model.mock_id then refresh_comments req model
       else model
+  (* /@axiom: comments.md#real-time-synchronizacja-komentarzy *)
 
 let handle_params _req model = model
 
 let temporary_assigns model = model
 
+(* @axiom: comments.md#dodawanie-komentarza *)
 let comment_form_view _model =
   let open Html in
   <form
@@ -160,7 +171,9 @@ let comment_form_view _model =
       (txt "Wyślij")
     </button>
   </form>
+(* /@axiom: comments.md#dodawanie-komentarza *)
 
+(* @axiom: comments.md#formularz-imienia-name-prompt *)
 let user_name_form_view _model =
   let open Html in
   <div class_="comment-name-prompt" id="comment-name-prompt">
@@ -172,7 +185,9 @@ let user_name_form_view _model =
       </button>
     </div>
   </div>
+(* /@axiom: comments.md#formularz-imienia-name-prompt *)
 
+(* @axiom: comments.md#renderowanie-aktywnych-komentarzy *)
 let render_active_comment ~confirm_delete (c : comment_entry) =
   let open Html in
   let confirming = confirm_delete = Some c.id in
@@ -216,7 +231,9 @@ let render_active_comment ~confirm_delete (c : comment_entry) =
           </button> )
     </div>
   </div>
+(* /@axiom: comments.md#renderowanie-aktywnych-komentarzy *)
 
+(* @axiom: comments.md#renderowanie-resolved-komentarzy *)
 let render_resolved_comment (c : comment_entry) =
   let open Html in
   <div class_="comment-item">
@@ -225,6 +242,7 @@ let render_resolved_comment (c : comment_entry) =
     </div>
     <p class_="comment-body">(txt c.body)</p>
   </div>
+(* /@axiom: comments.md#renderowanie-resolved-komentarzy *)
 
 let group_by_page comments =
   let pages =

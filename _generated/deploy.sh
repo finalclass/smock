@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# @axiom: infrastructure.md#skrypt-deploy
 set -euo pipefail
 
 HOST="fcmain"
@@ -21,8 +22,11 @@ echo "==> Extracting on server..."
 ssh "$HOST" "mkdir -p $REMOTE_DIR && tar -xzf /tmp/$ARCHIVE -C $REMOTE_DIR && rm /tmp/$ARCHIVE"
 
 echo "==> Syncing config..."
-rsync -az .env "$HOST:$REMOTE_DIR/.env"
-ssh "$HOST" "grep -q PRODUCTION $REMOTE_DIR/.env || echo 'PRODUCTION=true' >> $REMOTE_DIR/.env"
+if [ -f .env ]; then
+  rsync -az .env "$HOST:$REMOTE_DIR/.env"
+else
+  echo "    (no local .env, keeping server config)"
+fi
 rsync -az smock.service "$HOST:/etc/systemd/system/$SERVICE.service"
 
 echo "==> Installing & restarting service..."
@@ -32,3 +36,4 @@ echo "==> Status:"
 ssh "$HOST" "systemctl status $SERVICE --no-pager -l" || true
 
 echo "==> Done!"
+# /@axiom: infrastructure.md#skrypt-deploy
