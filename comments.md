@@ -1,7 +1,5 @@
 # System komentarzy
 
-## Aksjomaty
-
 ### LiveView komentarzy
 
 #### Model LiveView Comments
@@ -13,13 +11,18 @@ Formularz komentarza (SubmitComment) zbiera: author (hidden, z localStorage), bo
 #### Resolve i usunięcie komentarza
 Resolve (ResolveComment): ustawia resolved=1, publikuje CommentResolved. Usunięcie wymaga dwuetapowego potwierdzenia: (1) klik Delete → ustawia confirm_delete, (2) klik "Sure?" → kasuje komentarz i publikuje CommentDeleted. Klik Cancel → resetuje confirm_delete.
 
-#### Filtrowanie komentarzy
-Dwa tryby widoku: "Ta strona" (show_all=false) — tylko komentarze z bieżącej strony, "Wszystkie" (show_all=true) — komentarze ze wszystkich stron, pogrupowane po stronie z nagłówkami. Checkbox "Hide resolved" ukrywa rozwiązane komentarze. Przełącznik zrobiony jako segmented buttons (toggle-btn).
+#### Wszystkie komentarze
+[e2e]
+Dwa tryby widoku: "Ta strona" (show_all=false) — tylko komentarze z bieżącej strony, "Wszystkie" (show_all=true) — komentarze ze wszystkich stron, pogrupowane po stronie z nagłówkami. 
+
+#### Ukrywanie resolved
+[e2e] Checkbox "Hide resolved" ukrywa rozwiązane komentarze. Przełącznik zrobiony jako segmented buttons (toggle-btn).
 
 #### Real-time synchronizacja komentarzy
 LiveView subskrybuje topic comment_event. Na każdy event (CommentAdded, CommentResolved, CommentDeleted) z mock_id równym modelowi — przeładowuje listę komentarzy z bazy. Umożliwia synchronizację między wieloma otwartymi tabami tego samego mocka.
 
 ### Widok komentarzy (HTML)
+[e2e] Okno dodawania komentarzy jest ciągle widoczne i znajduje się na dole strony. Lista komentarzy jest powyżej i można ją scrollować.
 
 #### Renderowanie aktywnych komentarzy
 Aktywny komentarz (nie-resolved) wyświetla: imię autora (strong), nazwę strony (basename page_path), treść (p.comment-body), przyciski akcji: Resolve i Delete. Każdy element .comment-item ma data-comment-id, data-comment-x, data-comment-y, data-comment-page — używane do synchronizacji pinów.

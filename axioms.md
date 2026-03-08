@@ -2,19 +2,6 @@
 
 Smock (Supermok) to narzędzie do prezentacji mockupów HTML/CSS/JS dla klientów. Developer uploaduje moki przez API, klient dostaje krótki URL do przeglądania i komentowania.
 
-## Includes
-
-- [Technologia](./technology.md)
-- [Model danych](./data-model.md)
-- [Autentykacja](./auth.md)
-- [Zarządzanie projektami](./projects.md)
-- [Zarządzanie mokami](./mocks.md)
-- [System komentarzy](./comments.md)
-- [Interfejs admina](./admin-ui.md)
-- [Interfejs klienta](./client-ui.md)
-- [API](./api.md)
-- [Infrastruktura](./infrastructure.md)
-
 ## Słownik
 
 - **Projekt** — kontener organizacyjny (np. "Redesign strony X"), ma api_key do zarządzania przez API i token do udostępniania klientom
@@ -28,16 +15,43 @@ Smock (Supermok) to narzędzie do prezentacji mockupów HTML/CSS/JS dla klientó
 - **Slug** — wersja nazwy przyjazna URL-om (lowercase, myślniki zamiast spacji)
 - **Entry file** — domyślny plik HTML wyświetlany po otwarciu mocka (domyślnie index.html)
 - **Template processing** — jednorazowe przetwarzanie szablonów przy uploadzie: layout ({{layout: file}}) → yield ({{yield name}}) → bloki ({{name}}...{{/name}})
+- **Serwer testowy** - serwer do testów: https://smock.finalclass.net
 
 ## Labels
 
 ### [test]
-Wymaga testów jednostkowych. Testy pisane w test/smock_test.ml z użyciem Well_test (describe/it/expect). TDD: testy najpierw, implementacja potem.
+Wymaga testów integracyjnych (testy API). Testy pisane w `test/smock_test.ml` z użyciem `Well_test` (describe/it/expect). TDD: testy najpierw, implementacja potem.
+Aby dostać się do systemu ze świeżą bazą użyj danych dostępowych cap / admin
+Testy robimy w osobnej bazie danych (in memory)
 
-### [security]
+### [pentest]
 Wymaga przeglądu bezpieczeństwa: sprawdzenie autoryzacji, walidacji danych wejściowych, escapowania HTML, ochrony przed CSRF.
 
+### [e2e]
+Dany aksjomaty wymaga napisania testów e2e. Używamy frameworka playwright i testujemy no lokalnym komputerze. Czyli: W fazie weryfikacji uruchamiamy aplikacje a następnie odpalamy testy e2e. Jeśli jakiś nie przechodzi (niezależnie czy jest związany z obecnym aksjomatem czy nie) to naprawiamy aż zacznie działać
+Aby dostać się do systemu ze świeżą bazą użyj danych dostępowych cap / admin
+
+### [smoketest]
+Jeśli dany aksjomat się zmienił w etapie weryfikacji przeprowadź wdrożenie na testowy serwer (testing) i zobacz czy system jest dostępny
+
+### [lint]
+Uruchom lintery do sprawdzania kodu
+- dla ocaml: `dune @check`
+- dla ts: `bun tsc --noEmit`
+
 ## Aksjomaty
+[lint]
+
+- [Technologia](./technology.md)
+- [Model danych](./data-model.md)
+- [Autentykacja](./auth.md)
+- [Zarządzanie projektami](./projects.md)
+- [Zarządzanie mokami](./mocks.md)
+- [System komentarzy](./comments.md)
+- [Interfejs admina](./admin-ui.md)
+- [Interfejs klienta](./client-ui.md)
+- [API](./api.md)
+- [Infrastruktura](./infrastructure.md)
 
 ### System
 
@@ -48,4 +62,4 @@ Smock umożliwia developerom prezentowanie mockupów HTML/CSS/JS klientom do prz
 System ma dwa oddzielne tryby dostępu: (1) panel admina wymagający logowania (email + hasło, sesje) — dla developerów zarządzających projektami i mokami, (2) widok kliencki bez logowania — dostęp przez URL z tokenem projektu (/p/:token).
 
 #### Eventy i real-time
-System używa pub/sub eventów do synchronizacji w real-time. Dwa typy eventów: comment_event (CommentAdded, CommentResolved, CommentDeleted — każdy z mock_id i comment_id/id) oraz mock_event (MockUploaded z id i name, MockStatusChanged z id i status). LiveView subskrybuje eventy i odświeża UI automatycznie.
+System używa pub/sub eventów do synchronizacji w real-time. Dwa typy eventów: `comment_event` (`CommentAdded`, `CommentResolved`, `CommentDeleted` — każdy z `mock_id` i `comment_id/id`) oraz `mock_event` (`MockUploaded` z `id` i `name`, `MockStatusChanged` z `id` i `status`). LiveView subskrybuje eventy i odświeża UI automatycznie.

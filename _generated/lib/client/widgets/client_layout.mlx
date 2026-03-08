@@ -1,3 +1,4 @@
+(* @axiom: client-ui.md#layout-kliencki *)
 let createElement ?title:(page_title = "Smock") ?(children = []) () =
   let open Html in
   let page = <html lang="en">
@@ -14,3 +15,4 @@ let createElement ?title:(page_title = "Smock") ?(children = []) () =
     </body>
   </html> in
   [raw "<!DOCTYPE html>"; page] |> cat |> raw
+(* /@axiom: client-ui.md#layout-kliencki *)

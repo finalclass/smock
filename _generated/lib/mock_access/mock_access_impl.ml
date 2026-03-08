@@ -1,5 +1,4 @@
-(* MockAccess implementation — SQLite backend *)
-
+(* @axiom: data-model.md#tabela-mocks *)
 type mock_row = {
   id : int;
   project_id : int;
@@ -10,7 +9,9 @@ type mock_row = {
   created_at : string;
   updated_at : string;
 } [@@deriving table ~name:"mocks"]
+(* /@axiom: data-model.md#tabela-mocks *)
 
+(* @axiom: data-model.md#tabela-mock_files *)
 type mock_file_row = {
   id : int;
   mock_id : int;
@@ -18,7 +19,9 @@ type mock_file_row = {
   content_type : string;
   size : int;
 } [@@deriving table ~name:"mock_files"]
+(* /@axiom: data-model.md#tabela-mock_files *)
 
+(* @axiom: mocks.md#mockaccess--warstwa-dostępu-do-sqlite *)
 let%query all_mocks_by_project = "SELECT id, project_id, name, slug, status, entry_file, created_at, updated_at FROM mocks WHERE project_id = :project_id ORDER BY id DESC"
 let%query find_mock = "SELECT id, project_id, name, slug, status, entry_file, created_at, updated_at FROM mocks WHERE id = :id"
 let%query find_mock_by_slug = "SELECT id, project_id, name, slug, status, entry_file, created_at, updated_at FROM mocks WHERE project_id = :project_id AND slug = :slug"
@@ -121,3 +124,4 @@ module Impl : Mock_access.IMPL with type state = unit = struct
 end
 
 let spec = Mock_access.make_spec (module Impl)
+(* /@axiom: mocks.md#mockaccess--warstwa-dostępu-do-sqlite *)

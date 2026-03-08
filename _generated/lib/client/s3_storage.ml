@@ -1,10 +1,15 @@
-(* S3 storage — mock file operations *)
-
+(* @axiom: mocks.md#przechowywanie-plików-na-s3 *)
 let s3 = lazy (Well.S3.connect ())
 let get_s3 () = Lazy.force s3
 
+let sanitize_path path =
+  let parts = String.split_on_char '/' path in
+  let safe_parts = List.filter (fun p -> p <> ".." && p <> "." && p <> "") parts in
+  String.concat "/" safe_parts
+
 let s3_key ~project_id ~mock_id path =
-  Printf.sprintf "mocks/%d/%d/%s" project_id mock_id path
+  let safe_path = sanitize_path path in
+  Printf.sprintf "mocks/%d/%d/%s" project_id mock_id safe_path
 
 let content_type_of_ext path =
   let ext = Filename.extension path |> String.lowercase_ascii in
@@ -50,3 +55,4 @@ let delete_mock_files ~project_id ~mock_id (paths : string list) =
     let key = s3_key ~project_id ~mock_id path in
     ignore (Well.S3.delete s3 ~key)
   ) paths
+(* /@axiom: mocks.md#przechowywanie-plików-na-s3 *)

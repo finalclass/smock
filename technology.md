@@ -26,7 +26,7 @@ Serwisy definiowane przez pliki `.toml` w `lib/contract/`. `well contract build 
 Strony i widoki pisane w plikach `.mlx` — OCaml z wbudowanym HTML (jak JSX). Elementy HTML używają `class_`, `type_`, `name_` (z podkreślnikiem) zamiast rezerwowanych słów OCaml.
 
 #### System budowania Dune
-Dune zarządza kompilacją OCaml i TS→JS. `dune build` kompiluje wszystko. `dune test` uruchamia testy. `dune exec -w bin/main.exe` — tryb deweloperski z hot-reload.
+Dune zarządza kompilacją OCaml i TS→JS. `dune build --display=verbose` kompiluje wszystko. `dune test` uruchamia testy. `dune exec -w bin/main.exe` — tryb deweloperski z hot-reload.
 
 #### Architektura IDesign
 System zdekomponowany według IDesign (Juval Lowy): Manager → Engine → Access → Resource. Proporcje: 2 Managers, 1 Engine, 4 Access. Zamknięta architektura warstwowa — każda warstwa komunikuje się tylko z warstwą bezpośrednio poniżej.

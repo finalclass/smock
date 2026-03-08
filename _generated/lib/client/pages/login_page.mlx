@@ -1,3 +1,5 @@
+(* @axiom: admin-ui.md#strona-logowania *)
+(* @axiom: auth.md#logowanie-i-rejestracja *)
 Well.get "/login" @@ fun req ->
 let open Html in
 let error = Well.query req "error" in
@@ -31,3 +33,5 @@ match Well.Auth.login_and_set_session req ~email ~password with
 Well.post "/logout" @@ fun req ->
 Well.Auth.logout req;
 Well.redirect "/login"
+(* /@axiom: auth.md#logowanie-i-rejestracja *)
+(* /@axiom: admin-ui.md#strona-logowania *)

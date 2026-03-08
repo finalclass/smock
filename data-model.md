@@ -1,7 +1,5 @@
 # Model danych
 
-## Aksjomaty
-
 ### Tabele
 
 #### Tabela projects

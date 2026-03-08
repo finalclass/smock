@@ -1,3 +1,4 @@
+# @axiom: data-model.md#kontrakt-commentaccess
 [service.rpc]
 list_by_mock = "MockReq -> CommentList"
 create = "CreateReq -> Comment"
@@ -34,3 +35,4 @@ comments = { type = "list", of = "Comment" }
 
 [msg.Ok.struct]
 ok = "bool"
+# /@axiom: data-model.md#kontrakt-commentaccess

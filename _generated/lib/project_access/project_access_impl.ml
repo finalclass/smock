@@ -1,5 +1,4 @@
-(* ProjectAccess implementation — SQLite backend *)
-
+(* @axiom: data-model.md#tabela-projects *)
 type project_row = {
   id : int;
   name : string;
@@ -8,7 +7,9 @@ type project_row = {
   created_at : string;
   user_id : int;
 } [@@deriving table ~name:"projects"]
+(* /@axiom: data-model.md#tabela-projects *)
 
+(* @axiom: projects.md#projectaccess--warstwa-dostępu-do-sqlite *)
 let%query all_projects = "SELECT id, name, token, api_key, created_at, user_id FROM projects ORDER BY id DESC"
 let%query projects_by_user = "SELECT id, name, token, api_key, created_at, user_id FROM projects WHERE user_id = :user_id ORDER BY id DESC"
 let%query find_project = "SELECT id, name, token, api_key, created_at, user_id FROM projects WHERE id = :id"
@@ -21,16 +22,20 @@ let%query assign_orphan_projects = "UPDATE projects SET user_id = :user_id WHERE
 let db = lazy (Well.Db.open_db ())
 let get_db () = Lazy.force db
 
+(* @axiom: data-model.md#generowanie-tokenu-projektu *)
 let gen_token () =
   let chars = "abcdefghijklmnopqrstuvwxyz0123456789" in
   String.init 8 (fun _ -> chars.[Random.int (String.length chars)])
+(* /@axiom: data-model.md#generowanie-tokenu-projektu *)
 
+(* @axiom: data-model.md#generowanie-api-key *)
 let gen_api_key () =
   let buf = Buffer.create 32 in
   for _ = 1 to 32 do
     Buffer.add_string buf (Printf.sprintf "%x" (Random.int 16))
   done;
   Buffer.contents buf
+(* /@axiom: data-model.md#generowanie-api-key *)
 
 let now () =
   let t = Unix.gettimeofday () in
@@ -113,3 +118,4 @@ let spec = Project_access.make_spec (module Impl)
 let assign_orphans ~user_id =
   let db = get_db () in
   Assign_orphan_projects.exec db ~user_id
+(* /@axiom: projects.md#projectaccess--warstwa-dostępu-do-sqlite *)

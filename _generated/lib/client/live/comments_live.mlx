@@ -40,7 +40,6 @@ type msg =
 [@@deriving yojson]
 
 let persistence = Well.LiveView.Ephemeral
-(* /@axiom: comments.md#model-liveview-comments *)
 
 let load_comments ctx mock_id =
   let result = Comment_access.list_by_mock ~ctx ~mock_id in
@@ -72,6 +71,7 @@ let init req props =
   in
   ({mock_id; page_path= entry_file; comments; author_name= ""; show_all= false; hide_resolved= false; confirm_delete= None},
    [Well.topic_name Events.comment_event])
+(* /@axiom: comments.md#model-liveview-comments *)
 
 let refresh_comments req model =
   let ctx = Well.rpc_ctx req in
@@ -79,10 +79,12 @@ let refresh_comments req model =
   {model with comments}
 
 let update req model = function
-  (* @axiom: comments.md#filtrowanie-komentarzy *)
+  (* @axiom: comments.md#wszystkie-komentarze *)
   | `SetShowAll v -> {model with show_all= v}
+  (* /@axiom: comments.md#wszystkie-komentarze *)
+  (* @axiom: comments.md#ukrywanie-resolved *)
   | `SetHideResolved v -> {model with hide_resolved= v}
-  (* /@axiom: comments.md#filtrowanie-komentarzy *)
+  (* /@axiom: comments.md#ukrywanie-resolved *)
   | `SetPage path -> {model with page_path= path}
   (* @axiom: comments.md#dodawanie-komentarza *)
   | `SubmitComment {author; body; x; y; page} ->
@@ -115,20 +117,28 @@ let update req model = function
   (* @axiom: comments.md#resolve-i-usunięcie-komentarza *)
   | `ResolveComment id ->
       let ctx = Well.rpc_ctx req in
-      ignore (Comment_access.resolve ~ctx ~id) ;
-      Well.publish Events.comment_event (`CommentResolved (model.mock_id, id)) ;
-      let comments = load_comments ctx model.mock_id in
-      {model with comments}
+      let c = Comment_access.list_by_mock ~ctx ~mock_id:model.mock_id in
+      if not (List.exists (fun (cc : Comment_access.Comment.t) -> cc.id = id) c.comments) then model
+      else begin
+        ignore (Comment_access.resolve ~ctx ~id) ;
+        Well.publish Events.comment_event (`CommentResolved (model.mock_id, id)) ;
+        let comments = load_comments ctx model.mock_id in
+        {model with comments}
+      end
   | `ConfirmDelete id ->
       if id > 0 then {model with confirm_delete= Some id}
       else {model with confirm_delete= None}
   | `DeleteComment id ->
       if model.confirm_delete = Some id then begin
         let ctx = Well.rpc_ctx req in
-        ignore (Comment_access.delete ~ctx ~id) ;
-        Well.publish Events.comment_event (`CommentDeleted (model.mock_id, id)) ;
-        let comments = load_comments ctx model.mock_id in
-        {model with comments; confirm_delete= None}
+        let c = Comment_access.list_by_mock ~ctx ~mock_id:model.mock_id in
+        if not (List.exists (fun (cc : Comment_access.Comment.t) -> cc.id = id) c.comments) then model
+        else begin
+          ignore (Comment_access.delete ~ctx ~id) ;
+          Well.publish Events.comment_event (`CommentDeleted (model.mock_id, id)) ;
+          let comments = load_comments ctx model.mock_id in
+          {model with comments; confirm_delete= None}
+        end
       end else model
   (* /@axiom: comments.md#resolve-i-usunięcie-komentarza *)
   (* @axiom: comments.md#real-time-synchronizacja-komentarzy *)

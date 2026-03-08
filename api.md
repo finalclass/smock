@@ -5,27 +5,27 @@
 ### Endpointy API
 
 #### POST /api/projects — tworzenie projektu
-[security]
+[pentest]
 Wymaga Bearer api_key. Tworzy nowy projekt z podaną nazwą (JSON body: {"name": "..."}). user_id dziedziczony z projektu znalezionego przez api_key. Zwraca JSON: id, name, token, api_key, created_at.
 
 #### GET /api/projects — lista projektów
-[security]
+[pentest]
 Wymaga Bearer api_key. Zwraca projekty należące do usera (user_id z projektu api_key). JSON: {"projects": [...]} z id, name, token, created_at (bez api_key w liście).
 
 #### POST /api/projects/:token/mocks — upload mocka
-[security]
+[pentest]
 Wymaga Bearer api_key. Multipart form-data z polem "name" i plikami. Sprawdza, czy user_id projektu :token zgadza się z user_id projektu api_key. Wywołuje MockManager.upload_mock. Zwraca JSON: id, name, slug, status, entry_file, url (ścieżka /p/:token/:slug).
 
 #### GET /api/projects/:token/mocks — lista moków
-[security]
+[pentest]
 Wymaga Bearer api_key. Zwraca moki projektu :token. Sprawdza ownership. JSON: {"mocks": [...]} z id, name, slug, status, entry_file, created_at, updated_at.
 
 #### PUT /api/projects/:token/mocks/:id — zmiana statusu
-[security]
+[pentest]
 Wymaga Bearer api_key. JSON body: {"status": "review|approved|rejected|draft"}. Sprawdza ownership. Wywołuje MockManager.update_status. Zwraca JSON: id, status, updated_at.
 
 #### DELETE /api/projects/:token/mocks/:id — usunięcie mocka
-[security]
+[pentest]
 Wymaga Bearer api_key. Sprawdza ownership. Wywołuje MockManager.delete_mock. Zwraca JSON: {"ok": true}.
 
 ### Middleware API

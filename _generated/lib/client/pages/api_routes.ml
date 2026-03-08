@@ -1,7 +1,5 @@
-(* API routes — REST endpoints for Smock *)
-
+(* @axiom: api.md#post-apiprojects--tworzenie-projektu *)
 let () =
-  (* POST /api/projects — create project (requires api_key, inherits user_id) *)
   Well.post ~middleware:[Api_auth.require_api_key] "/api/projects" @@ fun req ->
   let ctx = Well.rpc_ctx req in
   let json = Yojson.Safe.from_string req.body in
@@ -21,8 +19,10 @@ let () =
     ("created_at", `String project.created_at);
   ])
 
+(* /@axiom: api.md#post-apiprojects--tworzenie-projektu *)
+
+(* @axiom: api.md#get-apiprojects--lista-projektów *)
 let () =
-  (* GET /api/projects — list projects scoped to api_key owner *)
   Well.get ~middleware:[Api_auth.require_api_key] "/api/projects" @@ fun req ->
   let ctx = Well.rpc_ctx req in
   let caller_project = Api_auth.get_project req in
@@ -41,8 +41,10 @@ let () =
   ) result.projects in
   Well.json (`Assoc [("projects", `List projects_json)])
 
+(* /@axiom: api.md#get-apiprojects--lista-projektów *)
+
+(* @axiom: api.md#post-apiprojectstokenmocks--upload-mocka *)
 let () =
-  (* POST /api/projects/:token/mocks — upload mock (multipart, requires api_key) *)
   Well.post ~middleware:[Api_auth.require_api_key] "/api/projects/:token/mocks" @@ fun req ->
   let ctx = Well.rpc_ctx req in
   let token = Well.param req "token" in
@@ -66,8 +68,10 @@ let () =
     ("url", `String ("/p/" ^ project.token ^ "/" ^ mock.slug));
   ])
 
+(* /@axiom: api.md#post-apiprojectstokenmocks--upload-mocka *)
+
+(* @axiom: api.md#get-apiprojectstokenmocks--lista-moków *)
 let () =
-  (* GET /api/projects/:token/mocks — list mocks (requires api_key) *)
   Well.get ~middleware:[Api_auth.require_api_key] "/api/projects/:token/mocks" @@ fun req ->
   let ctx = Well.rpc_ctx req in
   let token = Well.param req "token" in
@@ -90,8 +94,10 @@ let () =
   ) result.mocks in
   Well.json (`Assoc [("mocks", `List mocks_json)])
 
+(* /@axiom: api.md#get-apiprojectstokenmocks--lista-moków *)
+
+(* @axiom: api.md#put-apiprojectstokenmocksid--zmiana-statusu *)
 let () =
-  (* PUT /api/projects/:token/mocks/:id — update status (requires api_key) *)
   Well.put ~middleware:[Api_auth.require_api_key] "/api/projects/:token/mocks/:id" @@ fun req ->
   let ctx = Well.rpc_ctx req in
   let token = Well.param req "token" in
@@ -101,6 +107,8 @@ let () =
    | Some p when p.user_id = project.user_id -> ()
    | _ -> failwith "Access denied");
   let mock_id = int_of_string (Well.param req "id") in
+  let mock_check = Mock_access.get ~ctx ~id:mock_id in
+  if mock_check.project_id <> project.id then failwith "Access denied";
   let json = Yojson.Safe.from_string req.body in
   let open Yojson.Safe.Util in
   let status = json |> member "status" |> to_string in
@@ -111,8 +119,10 @@ let () =
     ("updated_at", `String mock.updated_at);
   ])
 
+(* /@axiom: api.md#put-apiprojectstokenmocksid--zmiana-statusu *)
+
+(* @axiom: api.md#delete-apiprojectstokenmocksid--usunięcie-mocka *)
 let () =
-  (* DELETE /api/projects/:token/mocks/:id — delete mock (requires api_key) *)
   Well.delete ~middleware:[Api_auth.require_api_key] "/api/projects/:token/mocks/:id" @@ fun req ->
   let ctx = Well.rpc_ctx req in
   let token = Well.param req "token" in
@@ -122,5 +132,8 @@ let () =
    | Some p when p.user_id = project.user_id -> ()
    | _ -> failwith "Access denied");
   let mock_id = int_of_string (Well.param req "id") in
+  let mock_check = Mock_access.get ~ctx ~id:mock_id in
+  if mock_check.project_id <> project.id then failwith "Access denied";
   ignore (Mock_manager_impl.delete_mock ~ctx ~mock_id);
   Well.json (`Assoc [("ok", `Bool true)])
+(* /@axiom: api.md#delete-apiprojectstokenmocksid--usunięcie-mocka *)

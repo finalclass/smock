@@ -1,5 +1,4 @@
-(* API auth — Bearer token middleware and user auth helpers *)
-
+(* @axiom: auth.md#bearer-token-api *)
 module ProjectCtx = Well.Context(struct
   type t = Project_access.Project.t option
   let empty = None
@@ -31,7 +30,9 @@ let require_api_key : Well.middleware = fun next req ->
       Well.json (`Assoc [("error", `String "Invalid API key")]) |> Well.status 401
     | Some project ->
       next (ProjectCtx.set (Some project) req))
+(* /@axiom: auth.md#bearer-token-api *)
 
+(* @axiom: auth.md#właścicielstwo-projektów *)
 let require_auth (handler : Well.request -> 'a) (req : Well.request) : 'a =
   match Well.current_user req with
   | Some _ -> handler req
@@ -46,3 +47,4 @@ let ensure_project_owner (req : Well.request) (project : Project_access.Project.
   let uid = current_user_id req in
   if project.user_id <> uid then
     raise (Well.Auth.Auth_denied (403, "Not your project"))
+(* /@axiom: auth.md#właścicielstwo-projektów *)

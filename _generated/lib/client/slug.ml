@@ -1,5 +1,4 @@
-(* Slug — generate URL-safe slugs from names *)
-
+(* @axiom: data-model.md#generowanie-slugów *)
 let transliterate c =
   match c with
   | 'a'..'z' | '0'..'9' | '-' -> String.make 1 c
@@ -31,3 +30,4 @@ let generate name =
   let stop = if len > 0 && result.[len - 1] = '-' then len - 1 else len in
   if stop > start then String.sub result start (stop - start)
   else "untitled"
+(* /@axiom: data-model.md#generowanie-slugów *)

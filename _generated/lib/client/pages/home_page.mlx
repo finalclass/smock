@@ -1,3 +1,5 @@
+(* @axiom: admin-ui.md#strona-główna--lista-projektów *)
+(* @axiom: projects.md#lista-projektów *)
 Well.get "/" @@
 Api_auth.require_auth (fun req ->
 let open Html in
@@ -35,6 +37,10 @@ let result = Project_access.list_by_user ~ctx ~user_id in
 </Layout>)
 ;;
 
+(* /@axiom: projects.md#lista-projektów *)
+(* /@axiom: admin-ui.md#strona-główna--lista-projektów *)
+
+(* @axiom: projects.md#tworzenie-projektu *)
 Well.post "/projects" @@
 Api_auth.require_auth (fun req ->
 let ctx = Well.rpc_ctx req in
@@ -42,3 +48,4 @@ let user_id = Api_auth.current_user_id req in
 let name = Well.form req "name" in
 ignore (Project_access.create ~ctx ~name ~user_id);
 Well.redirect "/")
+(* /@axiom: projects.md#tworzenie-projektu *)

@@ -1,3 +1,4 @@
+(* @axiom: admin-ui.md#layout-strony-admina *)
 let createElement ?title:(page_title = "Smock") ?req ?(children = []) () =
   let open Html in
   let user_display = match req with
@@ -39,3 +40,4 @@ let createElement ?title:(page_title = "Smock") ?req ?(children = []) () =
     </body>
   </html> in
   [raw "<!DOCTYPE html>"; page] |> cat |> raw
+(* /@axiom: admin-ui.md#layout-strony-admina *)

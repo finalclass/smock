@@ -1,5 +1,4 @@
-(* CommentAccess implementation — SQLite backend *)
-
+(* @axiom: data-model.md#tabela-comments *)
 type comment_row = {
   id : int;
   mock_id : int;
@@ -11,7 +10,9 @@ type comment_row = {
   resolved : int;
   created_at : string;
 } [@@deriving table ~name:"comments"]
+(* /@axiom: data-model.md#tabela-comments *)
 
+(* @axiom: comments.md#commentaccess--warstwa-dostępu-do-sqlite *)
 let%query all_comments_by_mock = "SELECT id, mock_id, page_path, x_pct, y_pct, author_name, body, resolved, created_at FROM comments WHERE mock_id = :mock_id ORDER BY id DESC"
 let%query find_comment = "SELECT id, mock_id, page_path, x_pct, y_pct, author_name, body, resolved, created_at FROM comments WHERE id = :id"
 let%query insert_comment = "INSERT INTO comments (mock_id, page_path, x_pct, y_pct, author_name, body, resolved, created_at) VALUES (:mock_id, :page_path, :x_pct, :y_pct, :author_name, :body, 0, :created_at)"
@@ -73,3 +74,4 @@ module Impl : Comment_access.IMPL with type state = unit = struct
 end
 
 let spec = Comment_access.make_spec (module Impl)
+(* /@axiom: comments.md#commentaccess--warstwa-dostępu-do-sqlite *)

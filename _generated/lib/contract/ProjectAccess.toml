@@ -1,3 +1,4 @@
+# @axiom: data-model.md#kontrakt-projectaccess
 [service.rpc]
 list = "ListReq -> ProjectList"
 list_by_user = "UserReq -> ProjectList"
@@ -39,3 +40,4 @@ projects = { type = "list", of = "Project" }
 
 [msg.Ok.struct]
 ok = "bool"
+# /@axiom: data-model.md#kontrakt-projectaccess

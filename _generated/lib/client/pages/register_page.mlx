@@ -1,3 +1,5 @@
+(* @axiom: admin-ui.md#strona-rejestracji *)
+(* @axiom: auth.md#logowanie-i-rejestracja *)
 Well.get "/register" @@ fun req ->
 let open Html in
 let error = Well.query req "error" in
@@ -35,3 +37,5 @@ else
   | Error msg ->
     let encoded = String.concat "+" (String.split_on_char ' ' msg) in
     Well.redirect ("/register?error=" ^ encoded)
+(* /@axiom: auth.md#logowanie-i-rejestracja *)
+(* /@axiom: admin-ui.md#strona-rejestracji *)

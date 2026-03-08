@@ -306,6 +306,14 @@ document.addEventListener('DOMContentLoaded', () => {
       overlay.appendChild(pin);
     });
   }
+
+  // Observe comment list changes → re-render pins
+  const commentsLive = panel.querySelector('.comments-live') || panel;
+  const observer = new MutationObserver(() => renderPins());
+  observer.observe(commentsLive, { childList: true, subtree: true });
+
+  // Initial render
+  renderPins();
   // /@axiom: comments.md#renderowanie-pinów-na-overlay
 
   // @axiom: comments.md#interakcja-pinów-z-komentarzami
@@ -400,14 +408,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   // /@axiom: comments.md#interakcja-pinów-z-komentarzami
-
-  // Observe comment list changes → re-render pins
-  const commentsLive = panel.querySelector('.comments-live') || panel;
-  const observer = new MutationObserver(() => renderPins());
-  observer.observe(commentsLive, { childList: true, subtree: true });
-
-  // Initial render
-  renderPins();
 
   // @axiom: auth.md#imię-autora-komentarzy
   // @axiom: comments.md#formularz-imienia-name-prompt

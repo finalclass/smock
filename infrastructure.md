@@ -1,7 +1,5 @@
 # Infrastruktura
 
-## Aksjomaty
-
 ### Konfiguracja aplikacji
 
 #### Punkt wejścia aplikacji
@@ -16,10 +14,10 @@ Dwa typy eventów z `[@@deriving yojson, topic]`: comment_event (CommentAdded in
 ### Deploy
 
 #### Skrypt deploy
-deploy.sh: (1) `well release` tworzy archiwum, (2) SCP archiwum na serwer (HOST=fcmain, REMOTE_DIR=/opt/smock), (3) SSH extract, (4) rsync .env i smock.service, (5) systemctl daemon-reload, enable, restart.
+deploy.sh: (1) `well release` tworzy archiwum, (2) SCP archiwum na serwer (HOST=fcmain, REMOTE_DIR=/opt/smock), (3) SSH extract, (4) rsync .env i smock.service, (5) systemctl daemon-reload, enable, restart. Skrypt NIE ustawia PRODUCTION=true — TLS terminuje Caddy.
 
 #### Systemd service
-smock.service: Type=simple, WorkingDirectory=/opt/smock, ExecStart=/opt/smock/bin/smock, Restart=on-failure (3s), EnvironmentFile=/opt/smock/.env. Hardening: NoNewPrivileges, ProtectSystem=strict, ProtectHome, ReadWritePaths=/opt/smock, PrivateTmp. AmbientCapabilities=CAP_NET_BIND_SERVICE (porty 80/443). Produkcja: PRODUCTION=true → HTTPS automatycznie (smock.finalclass.net).
+smock.service: Type=simple, WorkingDirectory=/opt/smock, ExecStart=/opt/smock/bin/smock, Restart=on-failure (3s), EnvironmentFile=/opt/smock/.env. Hardening: NoNewPrivileges, ProtectSystem=strict, ProtectHome, ReadWritePaths=/opt/smock, PrivateTmp. Port 6000 (plain HTTP). TLS terminuje Caddy reverse proxy (smock.finalclass.net → localhost:6000).
 
 ### Build
 

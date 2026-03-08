@@ -13,3 +13,9 @@ well.log
 data/mocks/
 data/uploads/
 data/certs/
+.axioms/
+_release/
+_generated/_release/
+_generated/data/
+_generated/test-results/
+_generated/*.tar.gz

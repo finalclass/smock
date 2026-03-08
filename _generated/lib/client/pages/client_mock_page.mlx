@@ -1,3 +1,4 @@
+(* @axiom: client-ui.md#viewer-mocka--layout *)
 Well.get "/p/:token/:mock_slug" @@ fun req ->
 let open Html in
 let ctx = Well.rpc_ctx req in
@@ -44,7 +45,9 @@ let base_url = "/p/" ^ token ^ "/" ^ mock_slug ^ "/f/" in
 </Client_layout>
 ;;
 
-(* Serve mock files from S3 *)
+(* /@axiom: client-ui.md#viewer-mocka--layout *)
+
+(* @axiom: mocks.md#serwowanie-plików-mocka-klientowi *)
 Well.get "/p/:token/:mock_slug/f/*path" @@ fun req ->
 let ctx = Well.rpc_ctx req in
 let token = Well.param req "token" in
@@ -60,3 +63,4 @@ match S3_storage.get_file ~project_id:project.id ~mock_id:mock.id ~path with
       (Well.text data))
 | None ->
   Well.text "Not found" |> Well.status 404
+(* /@axiom: mocks.md#serwowanie-plików-mocka-klientowi *)

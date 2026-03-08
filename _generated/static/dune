@@ -1,3 +1,4 @@
+; @axiom: infrastructure.md#system-budowania
 ; TypeScript -> JavaScript (auto-promoted to source tree on build)
 ; Requires bun — install from https://bun.sh
 (rule
@@ -13,3 +14,4 @@
   (source_tree ../lib/contract/build/ts))
  (mode promote)
  (action (run bun build ts/mock-viewer.ts --outdir . --minify)))
+; /@axiom: infrastructure.md#system-budowania

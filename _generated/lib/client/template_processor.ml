@@ -1,7 +1,4 @@
-(* Template processor — handles {{layout: file}}, named blocks and yields *)
-(* Layout: {{yield blockname}} — placeholder for named block *)
-(* Page: {{blockname}}...{{/blockname}} — defines content for a named block *)
-
+(* @axiom: mocks.md#template-processing--system-layoutów *)
 type file_map = (string * string) list
 
 let find_file (files : file_map) path =
@@ -113,3 +110,4 @@ let process (files : file_map) : file_map =
     in
     (path, processed)
   ) files
+(* /@axiom: mocks.md#template-processing--system-layoutów *)

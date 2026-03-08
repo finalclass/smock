@@ -1,3 +1,5 @@
+(* @axiom: client-ui.md#lista-moków-dla-klienta *)
+(* @axiom: auth.md#dostęp-kliencki-bez-logowania *)
 Well.get "/p/:token" @@ fun req ->
 let open Html in
 let ctx = Well.rpc_ctx req in
@@ -31,3 +33,5 @@ let visible_mocks = List.filter (fun (m : Mock_access.Mock.t) -> m.status <> "dr
      </div>)
 </div>
 </Client_layout>
+(* /@axiom: auth.md#dostęp-kliencki-bez-logowania *)
+(* /@axiom: client-ui.md#lista-moków-dla-klienta *)

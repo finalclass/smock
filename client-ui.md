@@ -1,9 +1,5 @@
 # Interfejs klienta
 
-## Aksjomaty
-
-### Layout kliencki
-
 #### Layout kliencki
 Layout kliencki (client_layout.mlx) renderuje: DOCTYPE html, head z meta charset/viewport, title, link do /static/app.css. Body z class "client-body" (background #f0f0f0). Treść strony bez headera admina. Scripts: /static/well.js i /static/mock-viewer.js (oba type module).
 
