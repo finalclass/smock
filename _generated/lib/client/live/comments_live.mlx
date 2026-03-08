@@ -180,10 +180,15 @@ let comment_form_view _model =
     <button type_="submit" class_="btn btn-primary btn-send">
       (txt "Wyślij")
     </button>
+    (* @axiom: comments.md#zmiana-imienia *)
+    <button type_="button" class_="btn-change-name" id="change-name-btn">
+      (txt "zmień imię")
+    </button>
+    (* /@axiom: comments.md#zmiana-imienia *)
   </form>
 (* /@axiom: comments.md#dodawanie-komentarza *)
 
-(* @axiom: comments.md#formularz-imienia-name-prompt *)
+(* @axiom: comments.md#formularz-imienia *)
 let user_name_form_view _model =
   let open Html in
   <div class_="comment-name-prompt" id="comment-name-prompt">
@@ -195,7 +200,7 @@ let user_name_form_view _model =
       </button>
     </div>
   </div>
-(* /@axiom: comments.md#formularz-imienia-name-prompt *)
+(* /@axiom: comments.md#formularz-imienia *)
 
 (* @axiom: comments.md#renderowanie-aktywnych-komentarzy *)
 let render_active_comment ~confirm_delete (c : comment_entry) =

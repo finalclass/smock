@@ -30,8 +30,11 @@ Aktywny komentarz (nie-resolved) wyświetla: imię autora (strong), nazwę stron
 #### Renderowanie resolved komentarzy
 Sekcja "Resolved" wyświetlana pod aktywnymi (jeśli są i hide_resolved=false). Resolved komentarze wyświetlają tylko: imię autora i treść (bez przycisków akcji).
 
-#### Formularz imienia (name prompt)
+#### Formularz imienia
 Przed formularzem komentarza wyświetlany jest prompt "Aby komentować podaj swoje imię" z inputem i przyciskiem OK. Po wpisaniu imienia: zapisane do localStorage (smock_author z timestampem), prompt ukryty, formularz komentarza widoczny. Sprawdzanie imienia przy każdym renderze i zmianach DOM (MutationObserver).
+
+#### Zmiana imienia
+[e2e] Uzytkownik ma możliwość kliknięcia "zmień imię". Gdy kliknie, usuwamy dane odnośnie jego imienia tak aby [](#formularz-imienia) się wyświetlił na nowo i aby użytkownik mógł raz jeszcze ustawić imię
 
 ### Piny na overlay
 

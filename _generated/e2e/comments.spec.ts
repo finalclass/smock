@@ -187,4 +187,32 @@ test.describe('Comments — Widok komentarzy [e2e]', () => {
     await page.waitForTimeout(300);
     await expect(page.locator('.resolved-section')).toBeVisible();
   });
+
+  test('Zmiana imienia — przycisk zmień imię', async ({ page }) => {
+    await page.goto(`/p/${token}/${mockSlug}`);
+    await page.waitForSelector('.comments-panel');
+    await prepareCommentForm(page);
+
+    // Comment form should be visible, name prompt hidden
+    await expect(page.locator('#comment-form-inner')).toBeVisible();
+    await expect(page.locator('#comment-name-prompt')).not.toBeVisible();
+
+    // Click "zmień imię"
+    await page.locator('#change-name-btn').click();
+    await page.waitForTimeout(300);
+
+    // Name prompt should re-appear, form should be hidden
+    await expect(page.locator('#comment-name-prompt')).toBeVisible();
+    await expect(page.locator('#comment-form-inner')).not.toBeVisible();
+
+    // localStorage should be cleared
+    const stored = await page.evaluate(() => localStorage.getItem('smock_author'));
+    expect(stored).toBeNull();
+
+    // Fill name again and verify form comes back
+    await page.locator('#name-prompt-input').fill('Nowe Imię');
+    await page.locator('#name-prompt-btn').click();
+    await expect(page.locator('#comment-form-inner')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('#comment-name-prompt')).not.toBeVisible();
+  });
 });

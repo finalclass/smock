@@ -410,7 +410,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // /@axiom: comments.md#interakcja-pinów-z-komentarzami
 
   // @axiom: auth.md#imię-autora-komentarzy
-  // @axiom: comments.md#formularz-imienia-name-prompt
+  // @axiom: comments.md#formularz-imienia
 
   function checkAuthor() {
     const namePrompt = document.getElementById('comment-name-prompt');
@@ -442,10 +442,17 @@ document.addEventListener('DOMContentLoaded', () => {
     checkAuthor();
   }
 
+  // @axiom: comments.md#zmiana-imienia
+  function changeName() {
+    localStorage.removeItem('smock_author');
+    checkAuthor();
+  }
+  // /@axiom: comments.md#zmiana-imienia
+
   // Event delegation — works even when elements are added later by LiveView
   panel.addEventListener('click', (e) => {
     if ((e.target as Element).id === 'name-prompt-btn') submitName();
-
+    if ((e.target as Element).id === 'change-name-btn') changeName();
   });
   panel.addEventListener('keydown', (e) => {
     if ((e.target as Element).id === 'name-prompt-input' && e.key === 'Enter') submitName();
@@ -455,6 +462,6 @@ document.addEventListener('DOMContentLoaded', () => {
   checkAuthor();
   const obs = new MutationObserver(() => checkAuthor());
   obs.observe(panel, { childList: true, subtree: true });
-  // /@axiom: comments.md#formularz-imienia-name-prompt
+  // /@axiom: comments.md#formularz-imienia
   // /@axiom: auth.md#imię-autora-komentarzy
 });

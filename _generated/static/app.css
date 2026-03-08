@@ -258,7 +258,7 @@ a:hover { text-decoration: underline; }
 .comment-form-bottom form {
   display: flex; flex-direction: column; gap: 0.5rem;
 }
-/* @axiom: comments.md#formularz-imienia-name-prompt */
+/* @axiom: comments.md#formularz-imienia */
 .comment-name-prompt {
   text-align: center; padding: 0.5rem 0;
 }
@@ -273,7 +273,15 @@ a:hover { text-decoration: underline; }
   border-radius: 4px; font-size: 0.875rem; font-family: inherit;
 }
 .name-prompt-row .btn { padding: 0.5rem 1rem; }
-/* /@axiom: comments.md#formularz-imienia-name-prompt */
+/* /@axiom: comments.md#formularz-imienia */
+/* @axiom: comments.md#zmiana-imienia */
+.btn-change-name {
+  background: none; border: none; color: var(--muted); font-size: 0.75rem;
+  cursor: pointer; padding: 0.25rem 0; text-decoration: underline;
+  font-family: inherit;
+}
+.btn-change-name:hover { color: var(--accent); }
+/* /@axiom: comments.md#zmiana-imienia */
 .comment-input-row {
   display: flex; gap: 0.5rem; align-items: flex-end;
 }
