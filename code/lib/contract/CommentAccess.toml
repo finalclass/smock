@@ -1,0 +1,50 @@
+# @axiom: data-model.md#kontrakt-commentaccess
+[service.rpc]
+list_threads_by_mock = "MockReq -> ThreadList"
+create_thread = "CreateThreadReq -> Thread"
+add_comment = "AddCommentReq -> Comment"
+resolve_thread = "IdReq -> Thread"
+delete_thread = "IdReq -> Ok"
+
+[msg.Thread.struct]
+id = "int"
+mock_id = "int"
+page_path = "string"
+x_pct = "float"
+y_pct = "float"
+resolved = "bool"
+created_at = "string"
+comments = { type = "list", of = "Comment" }
+
+[msg.Comment.struct]
+id = "int"
+thread_id = "int"
+author_name = "string"
+body = "string"
+created_at = "string"
+
+[msg.MockReq.struct]
+mock_id = "int"
+
+[msg.IdReq.struct]
+id = "int"
+
+[msg.CreateThreadReq.struct]
+mock_id = "int"
+page_path = "string"
+x_pct = "float"
+y_pct = "float"
+author_name = "string"
+body = "string"
+
+[msg.AddCommentReq.struct]
+thread_id = "int"
+author_name = "string"
+body = "string"
+
+[msg.ThreadList.struct]
+threads = { type = "list", of = "Thread" }
+
+[msg.Ok.struct]
+ok = "bool"
+# /@axiom: data-model.md#kontrakt-commentaccess

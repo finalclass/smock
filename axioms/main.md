@@ -1,21 +1,22 @@
 # Smock — Axioms
 
-Smock (Supermok) to narzędzie do prezentacji mockupów HTML/CSS/JS dla klientów. Developer uploaduje moki przez API, klient dostaje krótki URL do przeglądania i komentowania.
+Smock (Supermok) to platforma do review UI — alternatywa dla Figmy w kontekście pracy nad interfejsami generowanymi przez AI. Developer (lub skill AI) uploaduje mockupy HTML/CSS/JS przez API, klient dostaje krótki URL do przeglądania i zostawiania feedbacku w wątkach (jak w Figma). Skill AI czyta feedback klienta przez API i automatycznie poprawia UI.
 
 ## Słownik
 
 - **Projekt** — kontener organizacyjny (np. "Redesign strony X"), ma api_key do zarządzania przez API i token do udostępniania klientom
 - **Mock** — wersja designu (np. "Landing Page v1"), przypisany do projektu, zawiera pliki HTML/CSS/JS, ma status (draft/review/approved/rejected)
 - **Strona mocka** — pojedynczy plik HTML w mocku (np. index.html, pricing.html), nawigacja między stronami w viewerze
-- **Komentarz** — tekstowa adnotacja do strony mocka, opcjonalnie z pinem na pozycji x/y (procent szerokości i wysokości)
-- **Pin** — wizualny znacznik na mockupie wskazujący miejsce, którego dotyczy komentarz
+- **Wątek (Thread)** — punkt feedbacku na mockupie, powiązany z pinem na pozycji x/y (%). Zawiera komentarze (pierwszy = treść otwierająca, kolejne = odpowiedzi). Może być resolved.
+- **Komentarz** — tekstowa wiadomość w wątku (odpowiedź lub treść otwierająca)
+- **Pin** — wizualny znacznik na mockupie wskazujący miejsce wątku. Każdy wątek ma pin — nie można komentować bez wskazania miejsca (flow jak w Figma)
 - **Viewer** — widok przeglądania mocka z iframe, panelem komentarzy, overlay'em pinów i przełącznikiem desktop/mobile
 - **Token** — 8-znakowy losowy string alfanumeryczny (lowercase) identyfikujący projekt w URL-ach klienckich
 - **API Key** — 32-znakowy hex string do autoryzacji operacji API (Bearer token)
 - **Slug** — wersja nazwy przyjazna URL-om (lowercase, myślniki zamiast spacji)
 - **Entry file** — domyślny plik HTML wyświetlany po otwarciu mocka (domyślnie index.html)
 - **Template processing** — jednorazowe przetwarzanie szablonów przy uploadzie: layout ({{layout: file}}) → yield ({{yield name}}) → bloki ({{name}}...{{/name}})
-- **Serwer testowy** - serwer do testów: https://smock.finalclass.net
+- **Serwer testowy** - serwer do testów: https://smock.finalclass.net (lokalnie: http://localhost:6000)
 
 ## Labels
 
@@ -39,6 +40,9 @@ Uruchom lintery do sprawdzania kodu
 - dla ocaml: `dune @check`
 - dla ts: `bun tsc --noEmit`
 
+### [scenario] @satisfaction(0.9) +browser
+AI chodzi po stronie i ocenia na ile dany aksjomat jest spelniony w skali od 0 do 1
+
 ## Aksjomaty
 [lint]
 
@@ -48,6 +52,7 @@ Uruchom lintery do sprawdzania kodu
 - [Zarządzanie projektami](./projects.md)
 - [Zarządzanie mokami](./mocks.md)
 - [System komentarzy](./comments.md)
+- [CommentAccess](./comment-access.md)
 - [Interfejs admina](./admin-ui.md)
 - [Interfejs klienta](./client-ui.md)
 - [API](./api.md)
@@ -56,10 +61,10 @@ Uruchom lintery do sprawdzania kodu
 ### System
 
 #### Cel systemu
-Smock umożliwia developerom prezentowanie mockupów HTML/CSS/JS klientom do przeglądu i komentowania. Developer uploaduje pliki przez API, system przetwarza szablony i przechowuje na S3. Klient dostaje krótki URL do przeglądania i może zostawiać komentarze z pinami wskazującymi konkretne miejsca na mockupie.
+Smock to platforma review UI — zamyka pętlę feedbacku między klientem a AI. Developer (lub skill AI) uploaduje mockupy HTML/CSS/JS przez API. Klient dostaje krótki URL, przegląda i zostawia feedback w wątkach (Figma-style: klik na mockup → pin → wątek z komentarzami). Skill AI czyta feedback przez API, poprawia UI, uploaduje nową wersję i oznacza wątki jako resolved. Cykl się powtarza aż klient zaakceptuje.
 
 #### Dwa tryby dostępu
 System ma dwa oddzielne tryby dostępu: (1) panel admina wymagający logowania (email + hasło, sesje) — dla developerów zarządzających projektami i mokami, (2) widok kliencki bez logowania — dostęp przez URL z tokenem projektu (/p/:token).
 
 #### Eventy i real-time
-System używa pub/sub eventów do synchronizacji w real-time. Dwa typy eventów: `comment_event` (`CommentAdded`, `CommentResolved`, `CommentDeleted` — każdy z `mock_id` i `comment_id/id`) oraz `mock_event` (`MockUploaded` z `id` i `name`, `MockStatusChanged` z `id` i `status`). LiveView subskrybuje eventy i odświeża UI automatycznie.
+System używa Well Channels do synchronizacji w real-time. Kanał `comments:{mock_id}` — eventy: `thread_created`, `comment_added`, `thread_resolved`, `thread_deleted`. Kanał `mocks:{project_id}` — eventy: `mock_uploaded`, `mock_status_changed`. Komponent Lit `<smock-comments>` łączy się z kanałem i aktualizuje UI bez przeładowania strony.

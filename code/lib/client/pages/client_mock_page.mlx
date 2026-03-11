@@ -1,0 +1,70 @@
+(* @axiom: client-ui.md#viewer-mocka--layout *)
+Well.get "/p/:token/:mock_slug" @@ fun req ->
+let open Html in
+let ctx = Well.rpc_ctx req in
+let token = Well.param req "token" in
+let mock_slug = Well.param req "mock_slug" in
+let project = Project_access.get_by_token ~ctx ~token in
+let mock = Mock_access.get_by_slug ~ctx ~project_id:project.id ~slug:mock_slug in
+let files_result = Mock_access.list_files ~ctx ~id:mock.id in
+let html_files = List.filter (fun (f : Mock_access.MockFile.t) ->
+  let ext = Filename.extension f.path in ext = ".html" || ext = ".htm"
+) files_result.files in
+let pages = List.filter (fun (f : Mock_access.MockFile.t) ->
+  f.path <> "layout.html"
+) html_files |> List.map (fun (f : Mock_access.MockFile.t) -> f.path) in
+let base_url = "/p/" ^ token ^ "/" ^ mock_slug ^ "/f/" in
+<Client_layout title=(mock.name ^ " — " ^ project.name)>
+(raw (Printf.sprintf {|<div class="viewer" id="mock-viewer" data-mock-id="%d" data-token="%s" data-slug="%s" data-base-url="%s" data-entry-file="%s">|}
+  mock.id (Html.escape_html token) (Html.escape_html mock_slug) (Html.escape_html base_url) (Html.escape_html mock.entry_file)))
+  <div class_="viewer-toolbar">
+    <a href="/" class_="toolbar-logo-link"><img src="/static/logo.png" alt="Smock" class_="toolbar-logo" /></a>
+    <a href=("/p/" ^ token) class_="viewer-back">(txt project.name)</a>
+    <h2 class_="viewer-title">(txt mock.name)</h2>
+    (raw {|<button class="btn-home-page" id="home-page-btn">Strona główna</button>|})
+    (raw {|<select class="page-select" id="page-select">|})
+      (pages |> List.map (fun page ->
+        (raw (Printf.sprintf {|<option value="%s"%s>%s</option>|} (Html.escape_html page) (if page = mock.entry_file then " selected" else "") (Html.escape_html (Filename.basename page))))
+      ) |> cat |> raw)
+    (raw {|</select>|})
+    <div class_="viewer-controls">
+      (raw {|<button class="viewport-btn active" data-viewport="desktop">Desktop</button>|})
+      (raw {|<button class="viewport-btn" data-viewport="mobile">Mobile</button>|})
+      (raw {|<div class="comment-mode-switch" id="comment-mode-switch"><button class="comment-mode-opt active" data-mode="navigate">Nawiguj</button><button class="comment-mode-opt" data-mode="comment">Komentuj</button></div>|})
+      <button class_="comment-toggle active" id="comment-toggle">(txt "Comments")</button>
+    </div>
+  </div>
+  <div class_="viewer-content">
+    <div class_="iframe-wrapper" id="iframe-wrapper">
+      (raw (Printf.sprintf {|<iframe id="mock-iframe" src="%s"></iframe>|} (Html.escape_html (base_url ^ mock.entry_file))))
+      <div class_="comment-overlay" id="comment-overlay" />
+    </div>
+    (* @axiom: comments.md#osadzenie-w-stronie *)
+    (raw (Printf.sprintf {|<smock-comments mock-id="%d" entry-file="%s"></smock-comments>|}
+      mock.id (Html.escape_html mock.entry_file)))
+    (* /@axiom: comments.md#osadzenie-w-stronie *)
+  </div>
+(raw {|</div>|})
+(raw {|<script type="module" src="/static/smock-comments.js"></script>|})
+</Client_layout>
+;;
+
+(* /@axiom: client-ui.md#viewer-mocka--layout *)
+
+(* @axiom: mocks.md#serwowanie-plików-mocka-klientowi *)
+Well.get "/p/:token/:mock_slug/f/*path" @@ fun req ->
+let ctx = Well.rpc_ctx req in
+let token = Well.param req "token" in
+let mock_slug = Well.param req "mock_slug" in
+let path = Well.param req "path" in
+let project = Project_access.get_by_token ~ctx ~token in
+let mock = Mock_access.get_by_slug ~ctx ~project_id:project.id ~slug:mock_slug in
+match S3_storage.get_file ~project_id:project.id ~mock_id:mock.id ~path with
+| Some data ->
+  let ct = S3_storage.content_type_of_ext path in
+  Well.header "Content-Type" ct
+    (Well.header "Cache-Control" "public, max-age=3600"
+      (Well.text data))
+| None ->
+  Well.text "Not found" |> Well.status 404
+(* /@axiom: mocks.md#serwowanie-plików-mocka-klientowi *)

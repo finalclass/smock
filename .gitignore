@@ -15,7 +15,7 @@ data/uploads/
 data/certs/
 .axioms/
 _release/
-_generated/_release/
-_generated/data/
-_generated/test-results/
-_generated/*.tar.gz
+code/_release/
+code/data/
+code/test-results/
+code/*.tar.gz
