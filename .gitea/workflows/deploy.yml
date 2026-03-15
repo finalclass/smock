@@ -1,0 +1,49 @@
+name: Deploy Smock
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'code/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        env:
+          TOKEN: ${{ secrets.GITEA_TOKEN }}
+        run: |
+          WORKDIR="/opt/act_runner/builds/${GITHUB_REPOSITORY}"
+          rm -rf "$WORKDIR"
+          AUTHED_URL=$(echo "${GITHUB_SERVER_URL}" | sed "s|://|://x-access-token:${TOKEN}@|")
+          git clone --depth=1 --branch="${GITHUB_REF_NAME}" "${AUTHED_URL}/${GITHUB_REPOSITORY}.git" "$WORKDIR"
+          echo "WORKDIR=$WORKDIR" >> "$GITHUB_ENV"
+      - name: Build and deploy
+        run: |
+          source ~/.bashrc
+          cd "$WORKDIR/code"
+          dune pkg lock
+          dune build
+          well release
+          ARCHIVE=$(ls -t *.tar.gz 2>/dev/null | head -1)
+          if [ -z "$ARCHIVE" ]; then
+            echo "ERROR: No .tar.gz archive found after well release"
+            exit 1
+          fi
+          mkdir -p /opt/smock
+          tar -xzf "$ARCHIVE" -C /opt/smock
+          systemctl restart smock
+          sleep 3
+          if systemctl is-active --quiet smock; then
+            echo "=== Smock deployed successfully ==="
+          else
+            echo "=== DEPLOY FAILED ==="
+            journalctl -u smock --no-pager -n 30
+            exit 1
+          fi
+      - name: Smoketest
+        run: |
+          sleep 5
+          curl -sf https://smock.finalclass.net/ > /dev/null
+          echo "=== Smoketest passed ==="
