@@ -22,6 +22,6 @@
 
 (source
  (fetch
-  (url git+ssh://git@github.com/finalclass/well.git)))
+  (url git+https://github.com/finalclass/well.git)))
 
 (dev)

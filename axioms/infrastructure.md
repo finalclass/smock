@@ -11,7 +11,7 @@ Kolejność middleware: (1) Well.error_handler — łapie wyjątki, (2) auth_err
 ### Deploy
 
 #### Skrypt deploy
-deploy.sh: (1) `well release` tworzy archiwum, (2) SCP archiwum na serwer (HOST=fcmain, REMOTE_DIR=/opt/smock), (3) SSH extract, (4) rsync .env i smock.service, (5) systemctl daemon-reload, enable, restart. Skrypt NIE ustawia PRODUCTION=true — TLS terminuje Caddy.
+deploy.sh działa lokalnie na serwerze (smock jest na tej samej maszynie): (1) `well release` tworzy archiwum, (2) extract do /opt/smock, (3) systemctl restart smock. Skrypt NIE ustawia PRODUCTION=true — TLS terminuje Caddy.
 
 #### Systemd service
 smock.service: Type=simple, WorkingDirectory=/opt/smock, ExecStart=/opt/smock/bin/smock, Restart=on-failure (3s), EnvironmentFile=/opt/smock/.env. Hardening: NoNewPrivileges, ProtectSystem=strict, ProtectHome, ReadWritePaths=/opt/smock, PrivateTmp. Port 6000 (plain HTTP). TLS terminuje Caddy reverse proxy (smock.finalclass.net → localhost:6000).
@@ -41,7 +41,7 @@ UWAGA: `PRODUCTION=true` NIE jest ustawione — TLS terminuje Caddy, nie Well. Z
 ### Build
 
 #### System budowania
-Dune project: lang 3.17, dialekt MLX (preprocess mlx-pp), pin well z GitHub SSH. Makefile: build (dune build), check (dune build @check), test (dune test), clean (dune clean), lock (dune pkg lock), dev (source .env + dune exec -w). TS→JS: bun build ts/mock-viewer.ts i well.ts, mode promote (wynik kopiowany do source tree).
+Dune project: lang 3.17, dialekt MLX (preprocess mlx-pp), pin well z GitHub HTTPS. Makefile: build (dune build), check (dune build @check), test (dune test), clean (dune clean), lock (dune pkg lock), dev (source .env + dune exec -w). TS→JS: bun build ts/mock-viewer.ts i well.ts, mode promote (wynik kopiowany do source tree).
 
 #### Testy
 Testy w test/smock_test.ml z Well_test. Istniejące testy: template processor (bez layoutu i z layoutem), slug generation (spacje, wielokrotne myślniki), S3 content type detection (css, html, js, png, unknown).
