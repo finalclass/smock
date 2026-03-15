@@ -1,0 +1,7 @@
+[dark-factory]
+init = "cd code && dune pkg lock && dune build"
+build = "cd code && dune build --display=verbose"
+test = "cd code && dune test"
+deploy = "cd code && bash deploy.sh"
+production_url = "https://smock.finalclass.net"
+smoketest = ["curl -sf https://smock.finalclass.net/"]
