@@ -36,7 +36,11 @@ let mocks_result = Mock_access.list_by_project ~ctx ~project_id:id in
        (mocks |> List.map (fun (m : Mock_access.Mock.t) ->
          <div class_="mock-card">
            <div class_="mock-info">
-             <h3>(txt m.name)</h3>
+             <div class_="mock-name-display">
+               <h3>(txt m.name)</h3>
+               (raw (Printf.sprintf {|<button type="button" class="btn-edit-name" onclick="smockEditName(this, %d, '%s')">Edit</button>|} m.id (Html.escape_html m.name)))
+             </div>
+             (raw (Printf.sprintf {|<form class="mock-name-form" style="display:none" action="/projects/%d/mocks/%d/rename" method="POST"><input type="hidden" name="_csrf_token" value="%s" /><input type="text" name="name" class="mock-name-input" value="%s" /><button type="submit" style="display:none">Save</button></form>|} project.id m.id (Html.escape_html (Well.csrf_token req)) (Html.escape_html m.name)))
              <div class_="mock-meta">
                <span class_=("status status-" ^ m.status)>(txt m.status)</span>
                <span>(txt m.slug)</span>
@@ -64,6 +68,29 @@ let mocks_result = Mock_access.list_by_project ~ctx ~project_id:id in
          </div>
        ) |> cat |> raw)
      </div>)
+  (raw {|<script>
+function smockEditName(btn, mockId, originalName) {
+  var card = btn.closest('.mock-card');
+  var display = card.querySelector('.mock-name-display');
+  var form = card.querySelector('.mock-name-form');
+  var input = form.querySelector('.mock-name-input');
+  display.style.display = 'none';
+  form.style.display = 'flex';
+  input.value = originalName;
+  input.focus();
+  input.select();
+  input.onkeydown = function(e) {
+    if (e.key === 'Escape') {
+      form.style.display = 'none';
+      display.style.display = 'flex';
+      input.value = originalName;
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (input.value.trim() !== '') form.submit();
+    }
+  };
+}
+</script>|})
   <form action=("/projects/" ^ string_of_int project.id ^ "/delete") method_="POST" class_="delete-form">
     (csrf_input (Well.csrf_token req))
     <button type_="submit" class_="btn btn-danger">(txt "Delete Project")</button>
@@ -91,6 +118,20 @@ Well.redirect ("/projects/" ^ string_of_int id))
 ;;
 
 (* /@axiom: mocks.md#zmiana-statusu-mocka *)
+
+Well.post "/projects/:id/mocks/:mock_id/rename" @@
+Api_auth.require_auth (fun req ->
+let ctx = Well.rpc_ctx req in
+let id = int_of_string (Well.param req "id") in
+let project = Project_access.get ~ctx ~id in
+Api_auth.ensure_project_owner req project;
+let mock_id = int_of_string (Well.param req "mock_id") in
+let mock_check = Mock_access.get ~ctx ~id:mock_id in
+if mock_check.project_id <> project.id then failwith "Access denied";
+let name = Well.form req "name" in
+ignore (Mock_manager_impl.rename_mock ~ctx ~mock_id ~name);
+Well.redirect ("/projects/" ^ string_of_int id))
+;;
 
 (* @axiom: mocks.md#kasowanie-mocka-z-s3 *)
 Well.post "/projects/:id/mocks/:mock_id/delete" @@

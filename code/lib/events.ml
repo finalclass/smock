@@ -8,6 +8,7 @@ type comment_event =
 
 type mock_event =
   [ `MockUploaded of int * string
-  | `MockStatusChanged of int * string ]
+  | `MockStatusChanged of int * string
+  | `MockRenamed of int * string ]
 [@@deriving yojson, topic]
 (* /@axiom: infrastructure.md#eventy--definicje-typów *)

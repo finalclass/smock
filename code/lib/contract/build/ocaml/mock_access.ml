@@ -209,6 +209,32 @@ module StatusReq = struct
     | _ -> failwith "StatusReq.of_wire: expected JSON array"
 end
 
+module RenameReq = struct
+  type t = {
+    id : int;
+    name : string;
+  }
+
+  let make ~id ~name () =
+    { id; name }
+
+  let to_wire (v : t) : Yojson.Safe.t =
+    `List [
+      `Int v.id;
+      `String v.name;
+    ]
+
+  let of_wire (wire : Yojson.Safe.t) : t =
+    match wire with
+    | `List arr ->
+      let a = Array.of_list arr in
+      let _g i = if i < Array.length a then a.(i) else `Null in
+      let id = (match (_g 0) with `Int i -> i | _ -> 0) in
+      let name = (match (_g 1) with `String s -> s | _ -> "") in
+      { id; name }
+    | _ -> failwith "RenameReq.of_wire: expected JSON array"
+end
+
 module AddFileReq = struct
   type t = {
     mock_id : int;
@@ -320,6 +346,7 @@ module type IMPL = sig
   val get_by_slug : state -> Well.rpc_ctx -> SlugReq.t -> Mock.t
   val create : state -> Well.rpc_ctx -> CreateReq.t -> Mock.t
   val update_status : state -> Well.rpc_ctx -> StatusReq.t -> Mock.t
+  val rename : state -> Well.rpc_ctx -> RenameReq.t -> Mock.t
   val delete : state -> Well.rpc_ctx -> IdReq.t -> Ok.t
   val add_file : state -> Well.rpc_ctx -> AddFileReq.t -> MockFile.t
   val list_files : state -> Well.rpc_ctx -> IdReq.t -> MockFileList.t
@@ -349,6 +376,10 @@ let make_spec (type s) (module I : IMPL with type state = s) : Well.Service.spec
       ; params = [{ Well.Service.pname = "id"; ptype = "int"; poptional = false }; { Well.Service.pname = "status"; ptype = "string"; poptional = false }]
       ; returns = [{ Well.Service.pname = "id"; ptype = "int"; poptional = false }; { Well.Service.pname = "project_id"; ptype = "int"; poptional = false }; { Well.Service.pname = "name"; ptype = "string"; poptional = false }; { Well.Service.pname = "slug"; ptype = "string"; poptional = false }; { Well.Service.pname = "status"; ptype = "string"; poptional = false }; { Well.Service.pname = "entry_file"; ptype = "string"; poptional = false }; { Well.Service.pname = "created_at"; ptype = "string"; poptional = false }; { Well.Service.pname = "updated_at"; ptype = "string"; poptional = false }]
       ; returns_name = "Mock" };
+      { Well.Service.rname = "rename"
+      ; params = [{ Well.Service.pname = "id"; ptype = "int"; poptional = false }; { Well.Service.pname = "name"; ptype = "string"; poptional = false }]
+      ; returns = [{ Well.Service.pname = "id"; ptype = "int"; poptional = false }; { Well.Service.pname = "project_id"; ptype = "int"; poptional = false }; { Well.Service.pname = "name"; ptype = "string"; poptional = false }; { Well.Service.pname = "slug"; ptype = "string"; poptional = false }; { Well.Service.pname = "status"; ptype = "string"; poptional = false }; { Well.Service.pname = "entry_file"; ptype = "string"; poptional = false }; { Well.Service.pname = "created_at"; ptype = "string"; poptional = false }; { Well.Service.pname = "updated_at"; ptype = "string"; poptional = false }]
+      ; returns_name = "Mock" };
       { Well.Service.rname = "delete"
       ; params = [{ Well.Service.pname = "id"; ptype = "int"; poptional = false }]
       ; returns = [{ Well.Service.pname = "ok"; ptype = "bool"; poptional = false }]
@@ -375,6 +406,8 @@ let make_spec (type s) (module I : IMPL with type state = s) : Well.Service.spec
           Mock.to_wire (I.create !state ctx (CreateReq.of_wire payload))
       | "update_status" ->
           Mock.to_wire (I.update_status !state ctx (StatusReq.of_wire payload))
+      | "rename" ->
+          Mock.to_wire (I.rename !state ctx (RenameReq.of_wire payload))
       | "delete" ->
           Ok.to_wire (I.delete !state ctx (IdReq.of_wire payload))
       | "add_file" ->
@@ -423,6 +456,14 @@ let update_status ~ctx ~id ~status =
   Mock.of_wire
     ((match !_service_ref with
       | Some f -> f "update_status" ctx_wire wire
+      | None -> failwith "MockAccess: service not registered"))
+
+let rename ~ctx ~id ~name =
+  let ctx_wire = Well.rpc_ctx_to_wire ctx in
+  let wire = RenameReq.to_wire (RenameReq.make ~id ~name ()) in
+  Mock.of_wire
+    ((match !_service_ref with
+      | Some f -> f "rename" ctx_wire wire
       | None -> failwith "MockAccess: service not registered"))
 
 let delete ~ctx ~id =

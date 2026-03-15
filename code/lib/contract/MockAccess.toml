@@ -5,6 +5,7 @@ get = "IdReq -> Mock"
 get_by_slug = "SlugReq -> Mock"
 create = "CreateReq -> Mock"
 update_status = "StatusReq -> Mock"
+rename = "RenameReq -> Mock"
 delete = "IdReq -> Ok"
 add_file = "AddFileReq -> MockFile"
 list_files = "IdReq -> MockFileList"
@@ -45,6 +46,10 @@ entry_file = "string"
 [msg.StatusReq.struct]
 id = "int"
 status = "string"
+
+[msg.RenameReq.struct]
+id = "int"
+name = "string"
 
 [msg.AddFileReq.struct]
 mock_id = "int"
