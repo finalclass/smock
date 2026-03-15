@@ -41,6 +41,13 @@ let update_status ~ctx ~mock_id ~status =
   mock
 (* /@axiom: mocks.md#zmiana-statusu-mocka *)
 
+let rename_mock ~ctx ~mock_id ~name =
+  let trimmed = String.trim name in
+  if trimmed = "" then failwith "Name cannot be empty";
+  let mock = Mock_access.rename ~ctx ~id:mock_id ~name:trimmed in
+  Well.publish Events.mock_event (`MockRenamed (mock.id, mock.name));
+  mock
+
 (* @axiom: mocks.md#kasowanie-mocka-z-s3 *)
 let delete_mock ~ctx ~mock_id =
   let mock = Mock_access.get ~ctx ~id:mock_id in

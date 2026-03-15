@@ -27,6 +27,7 @@ let%query find_mock = "SELECT id, project_id, name, slug, status, entry_file, cr
 let%query find_mock_by_slug = "SELECT id, project_id, name, slug, status, entry_file, created_at, updated_at FROM mocks WHERE project_id = :project_id AND slug = :slug"
 let%query insert_mock = "INSERT INTO mocks (project_id, name, slug, status, entry_file, created_at, updated_at) VALUES (:project_id, :name, :slug, :status, :entry_file, :created_at, :updated_at)"
 let%query update_mock_status = "UPDATE mocks SET status = :status, updated_at = :updated_at WHERE id = :id"
+let%query update_mock_name = "UPDATE mocks SET name = :name, updated_at = :updated_at WHERE id = :id"
 let%query delete_mock = "DELETE FROM mocks WHERE id = :id"
 let%query insert_mock_file = "INSERT INTO mock_files (mock_id, path, content_type, size) VALUES (:mock_id, :path, :content_type, :size)"
 let%query all_mock_files = "SELECT id, mock_id, path, content_type, size FROM mock_files WHERE mock_id = :mock_id ORDER BY path"
@@ -98,6 +99,14 @@ module Impl : Mock_access.IMPL with type state = unit = struct
     let db = get_db () in
     let ts = now () in
     Update_mock_status.exec db ~status:req.status ~updated_at:ts ~id:req.id;
+    match Find_mock.query db ~id:req.id with
+    | r :: _ -> mock_of_find r
+    | [] -> failwith "Mock not found"
+
+  let rename () _ctx (req : Mock_access.RenameReq.t) =
+    let db = get_db () in
+    let ts = now () in
+    Update_mock_name.exec db ~name:req.name ~updated_at:ts ~id:req.id;
     match Find_mock.query db ~id:req.id with
     | r :: _ -> mock_of_find r
     | [] -> failwith "Mock not found"
