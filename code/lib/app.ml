@@ -18,13 +18,13 @@ let run () =
 
   (* /@axiom: api.md#csrf-selektywne *)
 
-  (* @axiom: api.md#rpc-bearer-auth *)
+  (* @axiom: api.md#autoryzacja-rpc *)
   (* Require Bearer api_key for /rpc/* endpoints (AI skills only) *)
   Well.use (fun next req ->
       if String.length req.path >= 5 && String.sub req.path 0 5 = "/rpc/"
       then Api_auth.require_api_key next req
       else next req ) ;
-  (* /@axiom: api.md#rpc-bearer-auth *)
+  (* /@axiom: api.md#autoryzacja-rpc *)
 
   (* @axiom: api.md#rate-limiting *)
   Well.use (Well.rate_limit ~max_requests:60 ~window_ms:10_000 ()) ;
@@ -44,7 +44,7 @@ let run () =
   ) ;
   (* /@axiom: comments.md#serwer--handler-kanału *)
 
-  (* @axiom: comments.md#api-komentarzy-dla-klienta *)
+  (* @axiom: comments.md#kanał-commentsmockid *)
   (* Client-facing comment API routes — no Bearer required, uses wire format *)
   let comment_to_json (c : Comment_access.Comment.t) =
     `Assoc [("id", `Int c.id); ("thread_id", `Int c.thread_id);
@@ -107,7 +107,7 @@ let run () =
     let ctx = Well.rpc_ctx req in
     let result = Comment_access.delete_thread ~ctx ~id in
     Well.json (`Assoc [("ok", `Bool result.ok)])) ;
-  (* /@axiom: comments.md#api-komentarzy-dla-klienta *)
+  (* /@axiom: comments.md#kanał-commentsmockid *)
 
   (match Sys.getenv_opt "SMOCK_ADMIN_KEY" with
    | Some password when password <> "" ->

@@ -109,7 +109,7 @@ test.describe('Comments — Thread-based system [e2e]', () => {
     mockSlug = data.mockSlug;
   });
 
-  // @axiom: comments.md#flow-tworzenia-nowego-wątku
+  // @axiom: comments.md#flow-tworzenia-nowego-wątku-figma-style
   test('Thread creation via overlay click, bubble, and submit', async ({ page }) => {
     await page.goto(`/p/${token}/${mockSlug}`);
     await page.waitForSelector('smock-comments');
@@ -123,7 +123,7 @@ test.describe('Comments — Thread-based system [e2e]', () => {
     const threadItem = smockComments.locator('.thread-item');
     await expect(threadItem.first()).toBeVisible({ timeout: 5000 });
   });
-  // /@axiom: comments.md#flow-tworzenia-nowego-wątku
+  // /@axiom: comments.md#flow-tworzenia-nowego-wątku-figma-style
 
   // @axiom: comments.md#flow-odpowiadania-w-wątku
   test('Reply in thread', async ({ page }) => {

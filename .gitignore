@@ -2,6 +2,7 @@ _build/
 *.install
 .merlin
 _opam/
+code/.opam/
 _esy/
 data/*.sqlite
 data/*.sqlite-wal

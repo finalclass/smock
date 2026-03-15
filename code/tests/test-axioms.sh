@@ -44,19 +44,11 @@ has_axiom_markers() {
 has_matched_markers() {
   local file="$DIR/$1"
   local opens closes
-  # HTML-style markers
-  opens=$(grep -c '<!-- @axiom:' "$file" 2>/dev/null || true)
-  closes=$(grep -c '<!-- /@axiom:' "$file" 2>/dev/null || true)
-  if [ "$opens" = "0" ] && [ "$closes" = "0" ]; then
-    # Bash/script-style markers
-    opens=$(grep -c '^# @axiom:' "$file" 2>/dev/null || true)
-    closes=$(grep -c '^# /@axiom:' "$file" 2>/dev/null || true)
-  fi
-  if [ "$opens" = "0" ] && [ "$closes" = "0" ]; then
-    # C-style markers (JS, PHP, CSS)
-    opens=$(grep -c '// @axiom:\|/\* @axiom:' "$file" 2>/dev/null || true)
-    closes=$(grep -c '// /@axiom:\|/\* /@axiom:' "$file" 2>/dev/null || true)
-  fi
+  # Count all opening and closing markers regardless of comment style
+  opens=$(grep -c '@axiom:' "$file" 2>/dev/null || true)
+  closes=$(grep -c '/@axiom:' "$file" 2>/dev/null || true)
+  # opens includes closes (/@axiom contains @axiom), so subtract
+  opens=$((opens - closes))
   [ "$opens" = "$closes" ] && pass "$1 markers matched ($opens pairs)" || fail "$1 markers matched" "opening=$opens closing=$closes"
 }
 
@@ -64,25 +56,26 @@ has_valid_axiom_refs() {
   local file="$DIR/$1"
   local project_root
   project_root="$(cd "$DIR/.." && pwd)"
+  local axioms_dir="$project_root/axioms"
   # Build list of valid namespace IDs from all axiom .md files
   local all_ns_ids=""
-  for md_file in "$project_root"/*.md "$project_root"/*-client/*.md; do
+  for md_file in "$axioms_dir"/*.md "$axioms_dir"/*-client/*.md; do
     [ -f "$md_file" ] || continue
-    local rel_path="${md_file#$project_root/}"
+    local rel_path="${md_file#$axioms_dir/}"
     while IFS= read -r heading; do
-      heading=$(echo "$heading" | sed 's/^#### //')
+      heading=$(echo "$heading" | sed 's/^#\{1,4\} //')
       local slug
-      slug=$(echo "$heading" | tr '[:upper:]' '[:lower:]' | sed "s/[\"'()\"„]//g" | sed 's/ /-/g')
+      slug=$(echo "$heading" | tr '[:upper:]' '[:lower:]' | sed 's/ — /--/g' | sed 's/—/--/g' | sed "s/[\"'()\`{}:\/<>\"„]//g" | sed 's/ /-/g' | sed 's/^-//;s/-$//')
       all_ns_ids="$all_ns_ids
 ${rel_path}#${slug}"
       # Also generate ASCII-transliterated slug for Polish diacritics
       local slug_ascii
-      slug_ascii=$(echo "$heading" | sed 's/ą/a/g; s/ć/c/g; s/ę/e/g; s/ł/l/g; s/ń/n/g; s/ó/o/g; s/ś/s/g; s/ź/z/g; s/ż/z/g; s/Ą/A/g; s/Ć/C/g; s/Ę/E/g; s/Ł/L/g; s/Ń/N/g; s/Ó/O/g; s/Ś/S/g; s/Ź/Z/g; s/Ż/Z/g' | tr '[:upper:]' '[:lower:]' | sed "s/[\"'()\"„]//g" | sed 's/ /-/g')
+      slug_ascii=$(echo "$heading" | sed 's/ą/a/g; s/ć/c/g; s/ę/e/g; s/ł/l/g; s/ń/n/g; s/ó/o/g; s/ś/s/g; s/ź/z/g; s/ż/z/g; s/Ą/A/g; s/Ć/C/g; s/Ę/E/g; s/Ł/L/g; s/Ń/N/g; s/Ó/O/g; s/Ś/S/g; s/Ź/Z/g; s/Ż/Z/g' | tr '[:upper:]' '[:lower:]' | sed 's/ — /--/g' | sed 's/—/--/g' | sed "s/[\"'()\`{}:\/<>\"„]//g" | sed 's/ /-/g' | sed 's/^-//;s/-$//')
       if [ "$slug" != "$slug_ascii" ]; then
         all_ns_ids="$all_ns_ids
 ${rel_path}#${slug_ascii}"
       fi
-    done < <(grep '^#### ' "$md_file" 2>/dev/null)
+    done < <(grep -E '^#{1,4} ' "$md_file" 2>/dev/null)
   done
   local invalid=0
   local invalid_names=""
@@ -92,10 +85,7 @@ ${rel_path}#${slug_ascii}"
       invalid=$((invalid + 1))
       invalid_names="$invalid_names [$marker_name]"
     fi
-  done < <(grep -ohP '(?<=@axiom: ).*?(?= -->)' "$file" 2>/dev/null | sort -u; \
-           grep -ohP '(?<=^# @axiom: ).*' "$file" 2>/dev/null | sort -u; \
-           grep -ohP '(?<=// @axiom: ).*' "$file" 2>/dev/null | sort -u; \
-           grep -ohP '(?<=/\* @axiom: ).*?(?= \*/)' "$file" 2>/dev/null | sort -u)
+  done < <(grep -ohP '(?<=@axiom: )\S+' "$file" 2>/dev/null | sed 's/ *\*\/$//;s/ *-->$//' | sort -u)
   [ "$invalid" = "0" ] && pass "$1 all axiom refs valid" || fail "$1 all axiom refs valid" "invalid:$invalid_names"
 }
 
@@ -132,14 +122,17 @@ echo ""
 
 # --- @axiom markers verification ---
 echo "--- @axiom markers verification ---"
-for f in "$DIR"/*.html "$DIR"/*.sh "$DIR"/*.js "$DIR"/*.php "$DIR"/*.css; do
+while IFS= read -r f; do
   [ -f "$f" ] || continue
-  fname=$(basename "$f")
-  [ "$fname" = "test-axioms.sh" ] && continue
+  fname="${f#$DIR/}"
+  # Skip test files, node_modules, _build, dune.lock
+  case "$fname" in
+    tests/*|test/*|node_modules/*|_build/*|dune.lock/*|lib/contract/build/*|.opam/*|static/*.js|static/well.ts|playwright.config.ts|tsconfig.json) continue ;;
+  esac
   has_axiom_markers "$fname"
   has_matched_markers "$fname"
   has_valid_axiom_refs "$fname"
-done
+done < <(find "$DIR" -type f \( -name "*.html" -o -name "*.sh" -o -name "*.js" -o -name "*.css" -o -name "*.ml" -o -name "*.mlx" -o -name "*.ts" \) ! -path "*/node_modules/*" ! -path "*/_build/*" ! -path "*/dune.lock/*")
 
 echo ""
 echo "--- @axiom orphaned content check ---"
