@@ -1,4 +1,4 @@
-(* @axiom: infrastructure.md#eventy--definicje-typów *)
+(* @axiom: main.md#eventy-i-real-time *)
 type comment_event =
   [ `ThreadCreated of int * int
   | `CommentAdded of int * int
@@ -11,4 +11,4 @@ type mock_event =
   | `MockStatusChanged of int * string
   | `MockRenamed of int * string ]
 [@@deriving yojson, topic]
-(* /@axiom: infrastructure.md#eventy--definicje-typów *)
+(* /@axiom: main.md#eventy-i-real-time *)

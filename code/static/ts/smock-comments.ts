@@ -94,7 +94,7 @@ export class SmockComments extends LitElement {
     // Load initial threads via API
     this.loadThreads();
 
-    // @axiom: comments.md#kanał-comments
+    // @axiom: comments.md#kanał-commentsmockid
     // Connect to Well Channel for real-time updates
     if ((window as any).well) {
       this.channel = (window as any).well.channel(`comments:${this.mockId}`);
@@ -102,7 +102,7 @@ export class SmockComments extends LitElement {
         this.handleBusEvent(payload);
       });
     }
-    // /@axiom: comments.md#kanał-comments
+    // /@axiom: comments.md#kanał-commentsmockid
 
     // Wait for DOM to be ready, then attach to external elements
     requestAnimationFrame(() => {
@@ -373,7 +373,7 @@ export class SmockComments extends LitElement {
 
   // ── Overlay click → new thread compose ──────────────────────────
 
-  // @axiom: comments.md#flow-tworzenia-nowego-wątku
+  // @axiom: comments.md#flow-tworzenia-nowego-wątku-figma-style
   private handleOverlayClick(e: MouseEvent) {
     const target = e.target as HTMLElement;
     // Don't handle clicks on pins or bubbles
@@ -403,7 +403,7 @@ export class SmockComments extends LitElement {
     this.openThreadId = null;
     this.renderPins();
   }
-  // /@axiom: comments.md#flow-tworzenia-nowego-wątku
+  // /@axiom: comments.md#flow-tworzenia-nowego-wątku-figma-style
 
   // ── Pin click → open thread ─────────────────────────────────────
 
@@ -416,7 +416,7 @@ export class SmockComments extends LitElement {
 
   // ── API commands ────────────────────────────────────────────────
 
-  // @axiom: comments.md#flow-tworzenia-nowego-wątku
+  // @axiom: comments.md#flow-tworzenia-nowego-wątku-figma-style
   private async createThread(body: string) {
     if (!this.activeCompose || !body.trim() || this.submitting) return;
     this.submitting = true;
@@ -439,7 +439,7 @@ export class SmockComments extends LitElement {
       this.submitting = false;
     }
   }
-  // /@axiom: comments.md#flow-tworzenia-nowego-wątku
+  // /@axiom: comments.md#flow-tworzenia-nowego-wątku-figma-style
 
   // @axiom: comments.md#flow-odpowiadania-w-wątku
   private async addComment(threadId: number, body: string) {
@@ -603,6 +603,10 @@ export class SmockComments extends LitElement {
 
     const bubble = document.createElement('div');
     bubble.className = 'comment-bubble';
+    // Flip bubble to the left when pin is near the right edge
+    if (x > 70) {
+      bubble.classList.add('comment-bubble-left');
+    }
     bubble.style.left = x + '%';
     bubble.style.top = y + '%';
     // Prevent overlay click from closing bubble
