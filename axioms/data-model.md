@@ -8,7 +8,7 @@ Tabela `projects` przechowuje projekty: id (int, PK auto), name (string), token 
 
 #### Tabela mocks
 [test]
-Tabela `mocks` przechowuje metadane moków: id (int, PK auto), project_id (int, FK do projects), name (string), slug (string, generowany z name), status (string: "draft"|"review"|"approved"|"rejected", domyślnie "draft"), entry_file (string, domyślny plik HTML), created_at (string ISO 8601 UTC), updated_at (string ISO 8601 UTC).
+Tabela `mocks` przechowuje metadane moków: id (int, PK auto), project_id (int, FK do projects), name (string), slug (string, generowany z name), status (string: "draft"|"review"|"approved"|"rejected", domyślnie "draft"), entry_file (string, domyślny plik HTML), ai_session_id (string, nullable — ID sesji ai-access powiązanej z tym mockiem, null jeśli mock stworzony przez API bez AI), created_at (string ISO 8601 UTC), updated_at (string ISO 8601 UTC).
 
 #### Tabela mock_files
 Tabela `mock_files` rejestruje pliki mocka: id (int, PK auto), mock_id (int, FK do mocks), path (string, ścieżka względna pliku), content_type (string MIME), size (int, rozmiar w bajtach). Sama zawartość plików na S3, nie w bazie.
@@ -29,7 +29,7 @@ Serwis ProjectAccess (lib/contract/ProjectAccess.toml) definiuje 7 operacji RPC:
 
 #### Kontrakt MockAccess
 [test]
-Serwis MockAccess (lib/contract/MockAccess.toml) definiuje 8 operacji RPC: list_by_project (ProjectReq→MockList), get (IdReq→Mock), get_by_slug (SlugReq→Mock), create (CreateReq→Mock), update_status (StatusReq→Mock), delete (IdReq→Ok), add_file (AddFileReq→MockFile), list_files (IdReq→MockFileList). Struktury: Mock (id, project_id, name, slug, status, entry_file, created_at, updated_at), MockFile (id, mock_id, path, content_type, size), plus struktury request/response.
+Serwis MockAccess (lib/contract/MockAccess.toml) definiuje 9 operacji RPC: list_by_project (ProjectReq→MockList), get (IdReq→Mock), get_by_slug (SlugReq→Mock), create (CreateReq→Mock), update_status (StatusReq→Mock), set_ai_session (SetAiSessionReq→Mock), delete (IdReq→Ok), add_file (AddFileReq→MockFile), list_files (IdReq→MockFileList). Struktury: Mock (id, project_id, name, slug, status, entry_file, ai_session_id, created_at, updated_at), MockFile (id, mock_id, path, content_type, size), SetAiSessionReq (id, ai_session_id), plus struktury request/response.
 
 #### Kontrakt CommentAccess
 [test]

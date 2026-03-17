@@ -14,7 +14,7 @@ Metadane (projekty, moki, pliki moków, komentarze) przechowywane w SQLite. Well
 Pliki moków (HTML/CSS/JS/obrazki) przechowywane na S3 (Hetzner Object Storage). Klucze S3: `mocks/{project_id}/{mock_id}/{path}`. Well.S3 dostarcza operacje put/get/delete.
 
 #### TypeScript do JavaScript
-Pliki `.ts` w `static/ts/` kompilowane do `.js` przez Bun przy `dune build`. Nigdy nie edytujemy plików `.js` bezpośrednio.
+Pliki `.ts` w `static/ts/` kompilowane do `.js` przez Bun przy `dune build`. Nigdy nie edytujemy plików `.js` bezpośrednio. Pliki TS: mock-viewer.ts, smock-comments.ts, smock-ai-chat.ts — każdy kompilowany osobno przez bun do odpowiadającego .js w static/.
 
 #### Deploy jako pojedyncza binarka
 `well release` tworzy archiwum tar.gz. Deploy na serwer przez SCP + systemd. Domena: smock.finalclass.net. W produkcji HTTPS automatycznie przez Well.
