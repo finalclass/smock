@@ -55,6 +55,7 @@ AI chodzi po stronie i ocenia na ile dany aksjomat jest spelniony w skali od 0 d
 - [CommentAccess](./comment-access.md)
 - [Interfejs admina](./admin-ui.md)
 - [Interfejs klienta](./client-ui.md)
+- [Budowanie mockupów z AI](./ai-chat.md)
 - [API](./api.md)
 - [Infrastruktura](./infrastructure.md)
 
