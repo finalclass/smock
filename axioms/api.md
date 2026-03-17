@@ -57,4 +57,4 @@ Komponent `<smock-comments>` w widoku klienckim komunikuje się wyłącznie prze
 Rate limit: 60 requestów na 10 sekund (Well.rate_limit). Aplikowany globalnie do wszystkich endpointów.
 
 #### CSRF selektywne
-CSRF middleware (Well.csrf) aplikowany do wszystkich requestów OPRÓCZ ścieżek zaczynających się od "/api" i "/rpc".
+CSRF middleware (Well.csrf) aplikowany do wszystkich requestów OPRÓCZ ścieżek zaczynających się od "/api" i "/rpc". Uwaga: endpointy `/api/projects/:id/ai/*` (proxy do ai-access) mimo prefiksu /api używają session auth admina (nie Bearer api_key) — szczegóły w [Budowanie mockupów z AI](./ai-chat.md).

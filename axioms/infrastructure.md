@@ -34,7 +34,8 @@ Plik `/opt/smock/.env` zawiera:
 - `AWS_ENDPOINT_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET` — dostęp do S3
 - `SMOCK_ADMIN_KEY` — hasło seed usera admina
 - `SMOCK_ADMIN_EMAIL` — email seed usera
-- `AI_ACCESS_TOKEN` — Bearer token do autoryzacji requestów do serwisu ai-access (http://localhost:9720)
+- `AI_ACCESS_TOKEN` — Bearer token do autoryzacji requestów do serwisu ai-access (http://localhost:9720). Używany w nagłówku Authorization proxy endpointów `/api/projects/:id/ai/*`
+- `ARCHEA_TOKEN` — scoped token Archea przekazywany jako `apiToken` przy tworzeniu sesji ai-access (POST /api/v1/sessions). Claude w sesji używa tego tokenu do operacji na repozytorium. Osobny od AI_ACCESS_TOKEN
 - `STORAGE=s3` — wymusza użycie S3 do przechowywania plików mocków (bez tego: local filesystem `data/mock_files/`)
 
 UWAGA: `PRODUCTION=true` NIE jest ustawione — TLS terminuje Caddy, nie Well. Zmienna `STORAGE=s3` steruje niezależnie wyborem backendu storage.
