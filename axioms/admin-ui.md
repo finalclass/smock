@@ -29,7 +29,7 @@ GET /projects/:id/mocks/new (wymaga auth + właściciel). Pełnoekranowy widok (
 1. **Toolbar** (flex, na górze): back link "Projekt" do /projects/:id, input nazwy mocka (text, placeholder "Nazwa mockupu...", border-bottom, font-size 1.1rem), kontrolki viewport (Desktop/Mobile jak w viewer klienta).
 2. **Content** (flex, reszta wysokości):
    - **iframe-wrapper** (flex:1): iframe z podglądem mocka. Początkowo pusty placeholder — szary box z tekstem "Mockup pojawi się tutaj po wygenerowaniu przez AI" (wycentrowany, kolor --muted). Po uploadzie mocka przez AI — iframe ładuje /p/:token/:slug/f/:entry_file. Select stron pojawia się w toolbarze po utworzeniu mocka (analogicznie do viewer klienta).
-   - **Panel czatu AI** (prawa strona): komponent `<smock-ai-chat project-id=":id" mock-name="...">` — [szczegóły w AI chat](./ai-chat.md).
+   - **Panel czatu AI** (prawa strona): komponent `<smock-ai-chat project-id=":id" mock-name="...">` — [szczegóły w AI chat](./mock-builder.md).
 
 Strona nasłuchuje na CustomEvent `mock-updated` z komponentu czatu — odświeża iframe src, aktualizuje select stron, aktualizuje URL przeglądarki.
 

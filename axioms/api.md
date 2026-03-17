@@ -28,6 +28,10 @@ Wymaga Bearer api_key. JSON body: {"status": "review|approved|rejected|draft"}. 
 [pentest]
 Wymaga Bearer api_key. Sprawdza ownership. Wywołuje MockManager.delete_mock. Zwraca JSON: {"ok": true}.
 
+#### PUT /api/projects/:token/mocks/:slug/files — aktualizacja plików mocka
+[pentest]
+Wymaga Bearer api_key. Multipart form-data z plikami. Sprawdza ownership. Zastępuje wszystkie pliki mocka: kasuje stare z S3, przetwarza szablony nowych, zapisuje na S3, rejestruje w mock_files, aktualizuje entry_file i updated_at. Publikuje event MockUploaded. Zwraca JSON: {id, name, slug, status, entry_file, file_count}.
+
 ### API feedbacku — kontrakty RPC
 
 Dostęp do wątków i komentarzy dla skilli AI odbywa się przez kontrakty RPC wystawione przez `Well.Service.expose "CommentAccess"`. Endpointy automatycznie dostępne pod `/rpc/CommentAccess/*`.
@@ -57,4 +61,4 @@ Komponent `<smock-comments>` w widoku klienckim komunikuje się wyłącznie prze
 Rate limit: 60 requestów na 10 sekund (Well.rate_limit). Aplikowany globalnie do wszystkich endpointów.
 
 #### CSRF selektywne
-CSRF middleware (Well.csrf) aplikowany do wszystkich requestów OPRÓCZ ścieżek zaczynających się od "/api" i "/rpc". Uwaga: endpointy `/api/projects/:id/ai/*` (proxy do ai-access) mimo prefiksu /api używają session auth admina (nie Bearer api_key) — szczegóły w [Budowanie mockupów z AI](./ai-chat.md).
+CSRF middleware (Well.csrf) aplikowany do wszystkich requestów OPRÓCZ ścieżek zaczynających się od "/api" i "/rpc". Uwaga: endpointy `/api/projects/:id/ai/*` (proxy do ai-access) mimo prefiksu /api używają session auth admina (nie Bearer api_key) — szczegóły w [Budowanie mockupów przez AI](./mock-builder.md).
