@@ -13,7 +13,7 @@ let () =
   let files = List.map (fun (_field, (f : Well.uploaded_file)) ->
     (f.filename, f.data)
   ) uploaded in
-  let (mock, entry_file, _count) =
+  let (mock, entry_file, count) =
     Mock_manager_impl.upload_files ~ctx ~project_id:project.id ~mock_id ~files
   in
   Well.json (`Assoc [
@@ -22,6 +22,7 @@ let () =
     ("slug", `String mock.slug);
     ("status", `String mock.status);
     ("entry_file", `String entry_file);
+    ("file_count", `Int count);
   ])
 (* /@axiom: mock-builder.md#endpoint-aktualizacji-plików-mocka *)
 
@@ -80,6 +81,21 @@ let http_get_with_query ~url ~token ~query =
   let full_url = if query = "" then url else url ^ "?" ^ query in
   http_get ~url:full_url ~token
 
+(* @axiom: mock-builder.md#endpointy-proxy *)
+let http_delete ~url ~token =
+  let safe_url = escape_single_quotes url in
+  let safe_token = escape_single_quotes token in
+  let cmd = Printf.sprintf
+    "curl -s -X DELETE '%s' -H 'Authorization: Bearer %s'"
+    safe_url safe_token
+  in
+  let ic = Unix.open_process_in cmd in
+  let buf = Buffer.create 1024 in
+  (try while true do Buffer.add_char buf (input_char ic) done with End_of_file -> ());
+  ignore (Unix.close_process_in ic);
+  Buffer.contents buf
+(* /@axiom: mock-builder.md#endpointy-proxy *)
+
 (* @axiom: mock-builder.md#post-apiprojectsidaisessions *)
 let () =
   Well.post "/api/projects/:id/ai/sessions" @@
@@ -126,8 +142,38 @@ let () =
         end
       end else ""
     in
-    let issue_body = "You are a mockup builder assistant. Help create or update HTML/CSS mockup files for the project."
-      ^ files_context in
+    let smock_url = "https://smock.finalclass.net" in
+    let issue_body = Printf.sprintf
+      "Jesteś asystentem budującym mockupy UI w HTML/CSS/JS dla platformy Smock.\n\n\
+       ## Adres API\n\
+       %s\n\n\
+       ## Dane projektu\n\
+       - token: %s\n\
+       - api_key: %s\n\n\
+       ## Upload nowego mocka\n\
+       ```\n\
+       curl -X POST \"%s/api/projects/%s/mocks\" \\\n\
+         -H \"Authorization: Bearer %s\" \\\n\
+         -F \"name={name}\" \\\n\
+         -F \"files[]=@index.html;filename=index.html\"\n\
+       ```\n\n\
+       ## Aktualizacja istniejącego mocka\n\
+       ```\n\
+       curl -X POST \"%s/api/projects/%s/mocks/%d/upload\" \\\n\
+         -H \"Authorization: Bearer %s\" \\\n\
+         -F \"files[]=@index.html;filename=index.html\"\n\
+       ```\n\n\
+       ## Zasady\n\
+       - Generuj responsywny HTML\n\
+       - Używaj nowoczesnego CSS (flexbox, grid, custom properties)\n\
+       - Pliki samodzielne (inline CSS/JS, brak zewnętrznych zależności)\n\
+       - entry_file to index.html\n\
+       %s"
+      smock_url
+      project.token project.api_key
+      smock_url project.token project.api_key
+      smock_url project.token mock.id project.api_key
+      files_context in
     (* Create session at ai-access *)
     let ai_url = ai_access_url () in
     let session_payload = `Assoc [
@@ -239,3 +285,22 @@ let () =
     Well.json (Yojson.Safe.from_string response_str)
   )
 (* /@axiom: mock-builder.md#post-apiprojectsidaisessionssidstop *)
+
+(* @axiom: mock-builder.md#endpointy-proxy *)
+let () =
+  Well.delete "/api/projects/:id/ai/sessions/:sid" @@
+  Api_auth.require_auth (fun req ->
+    let ctx = Well.rpc_ctx req in
+    let project_id = int_of_string (Well.param req "id") in
+    let project = Project_access.get ~ctx ~id:project_id in
+    Api_auth.ensure_project_owner req project;
+    let sid = Well.param req "sid" in
+    let ai_url = ai_access_url () in
+    let response_str = http_delete
+      ~url:(ai_url ^ "/api/v1/sessions/" ^ sid)
+      ~token:(ai_access_token ())
+    in
+    let _ = response_str in
+    Well.json (`Assoc [("ok", `Bool true)])
+  )
+(* /@axiom: mock-builder.md#endpointy-proxy *)

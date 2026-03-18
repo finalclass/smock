@@ -112,6 +112,17 @@ let run () =
   (* /@axiom: comments.md#kanał-commentsmockid *)
   (* /@axiom: comments.md#serwer--handler-kanału *)
 
+  (* @axiom: mock-builder.md#odświeżanie-podglądu-mocka *)
+  Well.Channel.channel
+    ~on_push:(fun _req _topic _event _payload ->
+      { Well.Channel.reply = None; broadcast = None })
+    "mocks:*"
+    (fun _req _topic ->
+      Ok { Well.Channel.subscribe = ["mocks:*"];
+           initial_state = None }
+    ) ;
+  (* /@axiom: mock-builder.md#odświeżanie-podglądu-mocka *)
+
   (match Sys.getenv_opt "SMOCK_ADMIN_KEY" with
    | Some password when password <> "" ->
      let email = match Sys.getenv_opt "SMOCK_ADMIN_EMAIL" with
