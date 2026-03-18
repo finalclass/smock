@@ -6,6 +6,7 @@ get_by_slug = "SlugReq -> Mock"
 create = "CreateReq -> Mock"
 update_status = "StatusReq -> Mock"
 rename = "RenameReq -> Mock"
+set_ai_session = "SetAiSessionReq -> Mock"
 delete = "IdReq -> Ok"
 add_file = "AddFileReq -> MockFile"
 list_files = "IdReq -> MockFileList"
@@ -17,6 +18,7 @@ name = "string"
 slug = "string"
 status = "string"
 entry_file = "string"
+ai_session_id = "string"
 created_at = "string"
 updated_at = "string"
 
@@ -50,6 +52,10 @@ status = "string"
 [msg.RenameReq.struct]
 id = "int"
 name = "string"
+
+[msg.SetAiSessionReq.struct]
+id = "int"
+ai_session_id = "string"
 
 [msg.AddFileReq.struct]
 mock_id = "int"

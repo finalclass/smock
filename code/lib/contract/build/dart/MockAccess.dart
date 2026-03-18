@@ -10,6 +10,7 @@ class Mock {
   final String entryFile;
   final String createdAt;
   final String updatedAt;
+  final String aiSessionId;
 
   const Mock({
     required this.id,
@@ -20,6 +21,7 @@ class Mock {
     required this.entryFile,
     required this.createdAt,
     required this.updatedAt,
+    required this.aiSessionId,
   });
 
   factory Mock.fromWire(dynamic data) {
@@ -33,6 +35,7 @@ class Mock {
       entryFile: (arr[5] as String),
       createdAt: (arr[6] as String),
       updatedAt: (arr[7] as String),
+      aiSessionId: (arr[8] as String),
     );
   }
 
@@ -46,6 +49,7 @@ class Mock {
       entryFile,
       createdAt,
       updatedAt,
+      aiSessionId,
     ];
   }
 }
@@ -241,6 +245,31 @@ class AddFileReq {
       path,
       contentType,
       size,
+    ];
+  }
+}
+
+class SetAiSessionReq {
+  final int id;
+  final String aiSessionId;
+
+  const SetAiSessionReq({
+    required this.id,
+    required this.aiSessionId,
+  });
+
+  factory SetAiSessionReq.fromWire(dynamic data) {
+    final arr = data as List;
+    return SetAiSessionReq(
+      id: (arr[0] as int),
+      aiSessionId: (arr[1] as String),
+    );
+  }
+
+  List<dynamic> toWire() {
+    return [
+      id,
+      aiSessionId,
     ];
   }
 }
@@ -441,5 +470,21 @@ class MockAccessClient {
     }
     final decoded = jsonDecode(response.body);
     return MockFileList.fromWire(decoded);
+  }
+
+  Future<Mock> setAiSession(SetAiSessionReq request) async {
+    final response = await _httpClient.post(
+      Uri.parse('$_baseUrl/rpc/MockAccess/set_ai_session'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: jsonEncode(request.toWire()),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('HTTP ${response.statusCode}: ${response.body}');
+    }
+    final decoded = jsonDecode(response.body);
+    return Mock.fromWire(decoded);
   }
 }

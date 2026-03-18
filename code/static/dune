@@ -22,4 +22,14 @@
   (source_tree ../lib/contract/build/ts))
  (mode promote)
  (action (run bun build ts/smock-comments.ts --outdir . --minify)))
+
+; @axiom: mock-builder.md#kompilacja-smock-ai-chatts
+(rule
+ (targets smock-ai-chat.js)
+ (deps
+  (source_tree ts)
+  (source_tree ../lib/contract/build/ts))
+ (mode promote)
+ (action (run bun build ts/smock-ai-chat.ts --outdir . --minify)))
+; /@axiom: mock-builder.md#kompilacja-smock-ai-chatts
 ; /@axiom: infrastructure.md#system-budowania

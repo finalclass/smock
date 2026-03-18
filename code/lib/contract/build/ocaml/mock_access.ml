@@ -8,12 +8,13 @@ module Mock = struct
     slug : string;
     status : string;
     entry_file : string;
+    ai_session_id : string;
     created_at : string;
     updated_at : string;
   }
 
-  let make ~id ~project_id ~name ~slug ~status ~entry_file ~created_at ~updated_at () =
-    { id; project_id; name; slug; status; entry_file; created_at; updated_at }
+  let make ~id ~project_id ~name ~slug ~status ~entry_file ~ai_session_id ~created_at ~updated_at () =
+    { id; project_id; name; slug; status; entry_file; ai_session_id; created_at; updated_at }
 
   let to_wire (v : t) : Yojson.Safe.t =
     `List [
@@ -23,6 +24,7 @@ module Mock = struct
       `String v.slug;
       `String v.status;
       `String v.entry_file;
+      `String v.ai_session_id;
       `String v.created_at;
       `String v.updated_at;
     ]
@@ -38,9 +40,10 @@ module Mock = struct
       let slug = (match (_g 3) with `String s -> s | _ -> "") in
       let status = (match (_g 4) with `String s -> s | _ -> "") in
       let entry_file = (match (_g 5) with `String s -> s | _ -> "") in
-      let created_at = (match (_g 6) with `String s -> s | _ -> "") in
-      let updated_at = (match (_g 7) with `String s -> s | _ -> "") in
-      { id; project_id; name; slug; status; entry_file; created_at; updated_at }
+      let ai_session_id = (match (_g 6) with `String s -> s | _ -> "") in
+      let created_at = (match (_g 7) with `String s -> s | _ -> "") in
+      let updated_at = (match (_g 8) with `String s -> s | _ -> "") in
+      { id; project_id; name; slug; status; entry_file; ai_session_id; created_at; updated_at }
     | _ -> failwith "Mock.of_wire: expected JSON array"
 end
 
@@ -235,6 +238,21 @@ module RenameReq = struct
     | _ -> failwith "RenameReq.of_wire: expected JSON array"
 end
 
+module SetAiSessionReq = struct
+  type t = { id : int; ai_session_id : string; }
+  let make ~id ~ai_session_id () = { id; ai_session_id }
+  let to_wire (v : t) : Yojson.Safe.t = `List [ `Int v.id; `String v.ai_session_id; ]
+  let of_wire (wire : Yojson.Safe.t) : t =
+    match wire with
+    | `List arr ->
+      let a = Array.of_list arr in
+      let _g i = if i < Array.length a then a.(i) else `Null in
+      let id = (match (_g 0) with `Int i -> i | _ -> 0) in
+      let ai_session_id = (match (_g 1) with `String s -> s | _ -> "") in
+      { id; ai_session_id }
+    | _ -> failwith "SetAiSessionReq.of_wire: expected JSON array"
+end
+
 module AddFileReq = struct
   type t = {
     mock_id : int;
@@ -347,6 +365,7 @@ module type IMPL = sig
   val create : state -> Well.rpc_ctx -> CreateReq.t -> Mock.t
   val update_status : state -> Well.rpc_ctx -> StatusReq.t -> Mock.t
   val rename : state -> Well.rpc_ctx -> RenameReq.t -> Mock.t
+  val set_ai_session : state -> Well.rpc_ctx -> SetAiSessionReq.t -> Mock.t
   val delete : state -> Well.rpc_ctx -> IdReq.t -> Ok.t
   val add_file : state -> Well.rpc_ctx -> AddFileReq.t -> MockFile.t
   val list_files : state -> Well.rpc_ctx -> IdReq.t -> MockFileList.t
@@ -362,23 +381,27 @@ let make_spec (type s) (module I : IMPL with type state = s) : Well.Service.spec
       ; returns_name = "MockList" };
       { Well.Service.rname = "get"
       ; params = [{ Well.Service.pname = "id"; ptype = "int"; poptional = false }]
-      ; returns = [{ Well.Service.pname = "id"; ptype = "int"; poptional = false }; { Well.Service.pname = "project_id"; ptype = "int"; poptional = false }; { Well.Service.pname = "name"; ptype = "string"; poptional = false }; { Well.Service.pname = "slug"; ptype = "string"; poptional = false }; { Well.Service.pname = "status"; ptype = "string"; poptional = false }; { Well.Service.pname = "entry_file"; ptype = "string"; poptional = false }; { Well.Service.pname = "created_at"; ptype = "string"; poptional = false }; { Well.Service.pname = "updated_at"; ptype = "string"; poptional = false }]
+      ; returns = [{ Well.Service.pname = "id"; ptype = "int"; poptional = false }; { Well.Service.pname = "project_id"; ptype = "int"; poptional = false }; { Well.Service.pname = "name"; ptype = "string"; poptional = false }; { Well.Service.pname = "slug"; ptype = "string"; poptional = false }; { Well.Service.pname = "status"; ptype = "string"; poptional = false }; { Well.Service.pname = "entry_file"; ptype = "string"; poptional = false }; { Well.Service.pname = "ai_session_id"; ptype = "string"; poptional = false }; { Well.Service.pname = "created_at"; ptype = "string"; poptional = false }; { Well.Service.pname = "updated_at"; ptype = "string"; poptional = false }]
       ; returns_name = "Mock" };
       { Well.Service.rname = "get_by_slug"
       ; params = [{ Well.Service.pname = "project_id"; ptype = "int"; poptional = false }; { Well.Service.pname = "slug"; ptype = "string"; poptional = false }]
-      ; returns = [{ Well.Service.pname = "id"; ptype = "int"; poptional = false }; { Well.Service.pname = "project_id"; ptype = "int"; poptional = false }; { Well.Service.pname = "name"; ptype = "string"; poptional = false }; { Well.Service.pname = "slug"; ptype = "string"; poptional = false }; { Well.Service.pname = "status"; ptype = "string"; poptional = false }; { Well.Service.pname = "entry_file"; ptype = "string"; poptional = false }; { Well.Service.pname = "created_at"; ptype = "string"; poptional = false }; { Well.Service.pname = "updated_at"; ptype = "string"; poptional = false }]
+      ; returns = [{ Well.Service.pname = "id"; ptype = "int"; poptional = false }; { Well.Service.pname = "project_id"; ptype = "int"; poptional = false }; { Well.Service.pname = "name"; ptype = "string"; poptional = false }; { Well.Service.pname = "slug"; ptype = "string"; poptional = false }; { Well.Service.pname = "status"; ptype = "string"; poptional = false }; { Well.Service.pname = "entry_file"; ptype = "string"; poptional = false }; { Well.Service.pname = "ai_session_id"; ptype = "string"; poptional = false }; { Well.Service.pname = "created_at"; ptype = "string"; poptional = false }; { Well.Service.pname = "updated_at"; ptype = "string"; poptional = false }]
       ; returns_name = "Mock" };
       { Well.Service.rname = "create"
       ; params = [{ Well.Service.pname = "project_id"; ptype = "int"; poptional = false }; { Well.Service.pname = "name"; ptype = "string"; poptional = false }; { Well.Service.pname = "slug"; ptype = "string"; poptional = false }; { Well.Service.pname = "entry_file"; ptype = "string"; poptional = false }]
-      ; returns = [{ Well.Service.pname = "id"; ptype = "int"; poptional = false }; { Well.Service.pname = "project_id"; ptype = "int"; poptional = false }; { Well.Service.pname = "name"; ptype = "string"; poptional = false }; { Well.Service.pname = "slug"; ptype = "string"; poptional = false }; { Well.Service.pname = "status"; ptype = "string"; poptional = false }; { Well.Service.pname = "entry_file"; ptype = "string"; poptional = false }; { Well.Service.pname = "created_at"; ptype = "string"; poptional = false }; { Well.Service.pname = "updated_at"; ptype = "string"; poptional = false }]
+      ; returns = [{ Well.Service.pname = "id"; ptype = "int"; poptional = false }; { Well.Service.pname = "project_id"; ptype = "int"; poptional = false }; { Well.Service.pname = "name"; ptype = "string"; poptional = false }; { Well.Service.pname = "slug"; ptype = "string"; poptional = false }; { Well.Service.pname = "status"; ptype = "string"; poptional = false }; { Well.Service.pname = "entry_file"; ptype = "string"; poptional = false }; { Well.Service.pname = "ai_session_id"; ptype = "string"; poptional = false }; { Well.Service.pname = "created_at"; ptype = "string"; poptional = false }; { Well.Service.pname = "updated_at"; ptype = "string"; poptional = false }]
       ; returns_name = "Mock" };
       { Well.Service.rname = "update_status"
       ; params = [{ Well.Service.pname = "id"; ptype = "int"; poptional = false }; { Well.Service.pname = "status"; ptype = "string"; poptional = false }]
-      ; returns = [{ Well.Service.pname = "id"; ptype = "int"; poptional = false }; { Well.Service.pname = "project_id"; ptype = "int"; poptional = false }; { Well.Service.pname = "name"; ptype = "string"; poptional = false }; { Well.Service.pname = "slug"; ptype = "string"; poptional = false }; { Well.Service.pname = "status"; ptype = "string"; poptional = false }; { Well.Service.pname = "entry_file"; ptype = "string"; poptional = false }; { Well.Service.pname = "created_at"; ptype = "string"; poptional = false }; { Well.Service.pname = "updated_at"; ptype = "string"; poptional = false }]
+      ; returns = [{ Well.Service.pname = "id"; ptype = "int"; poptional = false }; { Well.Service.pname = "project_id"; ptype = "int"; poptional = false }; { Well.Service.pname = "name"; ptype = "string"; poptional = false }; { Well.Service.pname = "slug"; ptype = "string"; poptional = false }; { Well.Service.pname = "status"; ptype = "string"; poptional = false }; { Well.Service.pname = "entry_file"; ptype = "string"; poptional = false }; { Well.Service.pname = "ai_session_id"; ptype = "string"; poptional = false }; { Well.Service.pname = "created_at"; ptype = "string"; poptional = false }; { Well.Service.pname = "updated_at"; ptype = "string"; poptional = false }]
       ; returns_name = "Mock" };
       { Well.Service.rname = "rename"
       ; params = [{ Well.Service.pname = "id"; ptype = "int"; poptional = false }; { Well.Service.pname = "name"; ptype = "string"; poptional = false }]
-      ; returns = [{ Well.Service.pname = "id"; ptype = "int"; poptional = false }; { Well.Service.pname = "project_id"; ptype = "int"; poptional = false }; { Well.Service.pname = "name"; ptype = "string"; poptional = false }; { Well.Service.pname = "slug"; ptype = "string"; poptional = false }; { Well.Service.pname = "status"; ptype = "string"; poptional = false }; { Well.Service.pname = "entry_file"; ptype = "string"; poptional = false }; { Well.Service.pname = "created_at"; ptype = "string"; poptional = false }; { Well.Service.pname = "updated_at"; ptype = "string"; poptional = false }]
+      ; returns = [{ Well.Service.pname = "id"; ptype = "int"; poptional = false }; { Well.Service.pname = "project_id"; ptype = "int"; poptional = false }; { Well.Service.pname = "name"; ptype = "string"; poptional = false }; { Well.Service.pname = "slug"; ptype = "string"; poptional = false }; { Well.Service.pname = "status"; ptype = "string"; poptional = false }; { Well.Service.pname = "entry_file"; ptype = "string"; poptional = false }; { Well.Service.pname = "ai_session_id"; ptype = "string"; poptional = false }; { Well.Service.pname = "created_at"; ptype = "string"; poptional = false }; { Well.Service.pname = "updated_at"; ptype = "string"; poptional = false }]
+      ; returns_name = "Mock" };
+      { Well.Service.rname = "set_ai_session"
+      ; params = [{ Well.Service.pname = "id"; ptype = "int"; poptional = false }; { Well.Service.pname = "ai_session_id"; ptype = "string"; poptional = false }]
+      ; returns = [{ Well.Service.pname = "id"; ptype = "int"; poptional = false }; { Well.Service.pname = "project_id"; ptype = "int"; poptional = false }; { Well.Service.pname = "name"; ptype = "string"; poptional = false }; { Well.Service.pname = "slug"; ptype = "string"; poptional = false }; { Well.Service.pname = "status"; ptype = "string"; poptional = false }; { Well.Service.pname = "entry_file"; ptype = "string"; poptional = false }; { Well.Service.pname = "ai_session_id"; ptype = "string"; poptional = false }; { Well.Service.pname = "created_at"; ptype = "string"; poptional = false }; { Well.Service.pname = "updated_at"; ptype = "string"; poptional = false }]
       ; returns_name = "Mock" };
       { Well.Service.rname = "delete"
       ; params = [{ Well.Service.pname = "id"; ptype = "int"; poptional = false }]
@@ -408,6 +431,7 @@ let make_spec (type s) (module I : IMPL with type state = s) : Well.Service.spec
           Mock.to_wire (I.update_status !state ctx (StatusReq.of_wire payload))
       | "rename" ->
           Mock.to_wire (I.rename !state ctx (RenameReq.of_wire payload))
+      | "set_ai_session" -> Mock.to_wire (I.set_ai_session !state ctx (SetAiSessionReq.of_wire payload))
       | "delete" ->
           Ok.to_wire (I.delete !state ctx (IdReq.of_wire payload))
       | "add_file" ->
@@ -464,6 +488,14 @@ let rename ~ctx ~id ~name =
   Mock.of_wire
     ((match !_service_ref with
       | Some f -> f "rename" ctx_wire wire
+      | None -> failwith "MockAccess: service not registered"))
+
+let set_ai_session ~ctx ~id ~ai_session_id =
+  let ctx_wire = Well.rpc_ctx_to_wire ctx in
+  let wire = SetAiSessionReq.to_wire (SetAiSessionReq.make ~id ~ai_session_id ()) in
+  Mock.of_wire
+    ((match !_service_ref with
+      | Some f -> f "set_ai_session" ctx_wire wire
       | None -> failwith "MockAccess: service not registered"))
 
 let delete ~ctx ~id =
