@@ -28,7 +28,10 @@ let mocks_result = Mock_access.list_by_project ~ctx ~project_id:id in
       <code>(txt ("/p/" ^ project.token))</code>
     </div>
   </div>
-  <h2>(txt "Mocks")</h2>
+  <div style_="display:flex;align-items:center;gap:1rem;margin-bottom:1rem">
+    <h2>(txt "Mocks")</h2>
+    <a href=("/projects/" ^ string_of_int project.id ^ "/mocks/new") class_="btn">(txt "Dodaj nowy mockup")</a>
+  </div>
   (match mocks_result.mocks with
    | [] -> <p class_="empty-state">(txt "No mocks uploaded yet. Use the API to upload.")</p>
    | mocks ->
@@ -48,6 +51,7 @@ let mocks_result = Mock_access.list_by_project ~ctx ~project_id:id in
              </div>
            </div>
            <div class_="mock-actions">
+             <a href=("/projects/" ^ string_of_int project.id ^ "/mocks/" ^ string_of_int m.id ^ "/edit") class_="btn btn-sm">(txt "Edit")</a>
              <a href=("/p/" ^ project.token ^ "/" ^ m.slug) class_="btn btn-sm">(txt "View")</a>
              <form action=("/projects/" ^ string_of_int project.id ^ "/mocks/" ^ string_of_int m.id ^ "/status") method_="POST" class_="inline-form">
                (csrf_input (Well.csrf_token req))

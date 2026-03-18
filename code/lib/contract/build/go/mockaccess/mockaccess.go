@@ -17,10 +17,11 @@ type Mock struct {
 	EntryFile string
 	CreatedAt string
 	UpdatedAt string
+	AiSessionId string
 }
 
 func (v Mock) ToWire() []any {
-	return []any{v.Id, v.ProjectId, v.Name, v.Slug, v.Status, v.EntryFile, v.CreatedAt, v.UpdatedAt}
+	return []any{v.Id, v.ProjectId, v.Name, v.Slug, v.Status, v.EntryFile, v.CreatedAt, v.UpdatedAt, v.AiSessionId}
 }
 
 func MockFromWire(data any) Mock {
@@ -34,6 +35,7 @@ func MockFromWire(data any) Mock {
 		EntryFile: arr[5].(string),
 		CreatedAt: arr[6].(string),
 		UpdatedAt: arr[7].(string),
+		AiSessionId: arr[8].(string),
 	}
 }
 
@@ -166,6 +168,23 @@ func AddFileReqFromWire(data any) AddFileReq {
 	}
 }
 
+type SetAiSessionReq struct {
+	Id int
+	AiSessionId string
+}
+
+func (v SetAiSessionReq) ToWire() []any {
+	return []any{v.Id, v.AiSessionId}
+}
+
+func SetAiSessionReqFromWire(data any) SetAiSessionReq {
+	arr := data.([]any)
+	return SetAiSessionReq{
+		Id: int(arr[0].(float64)),
+		AiSessionId: arr[1].(string),
+	}
+}
+
 type Ok struct {
 	Ok bool
 }
@@ -234,6 +253,7 @@ type Handler interface {
 	Delete(req IdReq) Ok
 	AddFile(req AddFileReq) MockFile
 	ListFiles(req IdReq) MockFileList
+	SetAiSession(req SetAiSessionReq) Mock
 }
 
 func CallListByProject(baseURL string, req ProjectReq) (MockList, error) {
@@ -306,6 +326,15 @@ func CallListFiles(baseURL string, req IdReq) (MockFileList, error) {
 		return zero, err
 	}
 	return MockFileListFromWire(wire), nil
+}
+
+func CallSetAiSession(baseURL string, req SetAiSessionReq) (Mock, error) {
+	wire, err := rpc(baseURL, "MockAccess", "set_ai_session", req.ToWire())
+	if err != nil {
+		var zero Mock
+		return zero, err
+	}
+	return MockFromWire(wire), nil
 }
 
 func rpc(baseURL, service, method string, payload []any) (any, error) {

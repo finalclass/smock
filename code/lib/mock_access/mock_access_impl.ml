@@ -6,6 +6,7 @@ type mock_row = {
   slug : string;
   status : string;
   entry_file : string;
+  ai_session_id : string;
   created_at : string;
   updated_at : string;
 } [@@deriving table ~name:"mocks"]
@@ -22,11 +23,12 @@ type mock_file_row = {
 (* /@axiom: data-model.md#tabela-mock_files *)
 
 (* @axiom: mocks.md#mockaccess--warstwa-dostępu-do-sqlite *)
-let%query all_mocks_by_project = "SELECT id, project_id, name, slug, status, entry_file, created_at, updated_at FROM mocks WHERE project_id = :project_id ORDER BY id DESC"
-let%query find_mock = "SELECT id, project_id, name, slug, status, entry_file, created_at, updated_at FROM mocks WHERE id = :id"
-let%query find_mock_by_slug = "SELECT id, project_id, name, slug, status, entry_file, created_at, updated_at FROM mocks WHERE project_id = :project_id AND slug = :slug"
-let%query insert_mock = "INSERT INTO mocks (project_id, name, slug, status, entry_file, created_at, updated_at) VALUES (:project_id, :name, :slug, :status, :entry_file, :created_at, :updated_at)"
+let%query all_mocks_by_project = "SELECT id, project_id, name, slug, status, entry_file, ai_session_id, created_at, updated_at FROM mocks WHERE project_id = :project_id ORDER BY id DESC"
+let%query find_mock = "SELECT id, project_id, name, slug, status, entry_file, ai_session_id, created_at, updated_at FROM mocks WHERE id = :id"
+let%query find_mock_by_slug = "SELECT id, project_id, name, slug, status, entry_file, ai_session_id, created_at, updated_at FROM mocks WHERE project_id = :project_id AND slug = :slug"
+let%query insert_mock = "INSERT INTO mocks (project_id, name, slug, status, entry_file, ai_session_id, created_at, updated_at) VALUES (:project_id, :name, :slug, :status, :entry_file, :ai_session_id, :created_at, :updated_at)"
 let%query update_mock_status = "UPDATE mocks SET status = :status, updated_at = :updated_at WHERE id = :id"
+let%query update_mock_ai_session = "UPDATE mocks SET ai_session_id = :ai_session_id WHERE id = :id"
 let%query update_mock_name = "UPDATE mocks SET name = :name, updated_at = :updated_at WHERE id = :id"
 let%query delete_mock = "DELETE FROM mocks WHERE id = :id"
 let%query insert_mock_file = "INSERT INTO mock_files (mock_id, path, content_type, size) VALUES (:mock_id, :path, :content_type, :size)"
@@ -46,16 +48,19 @@ let now () =
 let mock_of_row (r : All_mocks_by_project.row) : Mock_access.Mock.t =
   { id = r.id; project_id = r.project_id; name = r.name; slug = r.slug;
     status = r.status; entry_file = r.entry_file;
+    ai_session_id = r.ai_session_id;
     created_at = r.created_at; updated_at = r.updated_at }
 
 let mock_of_find (r : Find_mock.row) : Mock_access.Mock.t =
   { id = r.id; project_id = r.project_id; name = r.name; slug = r.slug;
     status = r.status; entry_file = r.entry_file;
+    ai_session_id = r.ai_session_id;
     created_at = r.created_at; updated_at = r.updated_at }
 
 let mock_of_slug (r : Find_mock_by_slug.row) : Mock_access.Mock.t =
   { id = r.id; project_id = r.project_id; name = r.name; slug = r.slug;
     status = r.status; entry_file = r.entry_file;
+    ai_session_id = r.ai_session_id;
     created_at = r.created_at; updated_at = r.updated_at }
 
 let file_of_row (r : All_mock_files.row) : Mock_access.MockFile.t =
@@ -89,11 +94,11 @@ module Impl : Mock_access.IMPL with type state = unit = struct
     let ts = now () in
     Insert_mock.exec db ~project_id:req.project_id ~name:req.name
       ~slug:req.slug ~status:"draft" ~entry_file:req.entry_file
-      ~created_at:ts ~updated_at:ts;
+      ~ai_session_id:"" ~created_at:ts ~updated_at:ts;
     let id = Int64.to_int (Sqlite3.last_insert_rowid db) in
     Mock_access.Mock.make ~id ~project_id:req.project_id ~name:req.name
       ~slug:req.slug ~status:"draft" ~entry_file:req.entry_file
-      ~created_at:ts ~updated_at:ts ()
+      ~ai_session_id:"" ~created_at:ts ~updated_at:ts ()
 
   let update_status () _ctx (req : Mock_access.StatusReq.t) =
     let db = get_db () in
@@ -107,6 +112,13 @@ module Impl : Mock_access.IMPL with type state = unit = struct
     let db = get_db () in
     let ts = now () in
     Update_mock_name.exec db ~name:req.name ~updated_at:ts ~id:req.id;
+    match Find_mock.query db ~id:req.id with
+    | r :: _ -> mock_of_find r
+    | [] -> failwith "Mock not found"
+
+  let set_ai_session () _ctx (req : Mock_access.SetAiSessionReq.t) =
+    let db = get_db () in
+    Update_mock_ai_session.exec db ~ai_session_id:req.ai_session_id ~id:req.id;
     match Find_mock.query db ~id:req.id with
     | r :: _ -> mock_of_find r
     | [] -> failwith "Mock not found"
@@ -133,4 +145,8 @@ module Impl : Mock_access.IMPL with type state = unit = struct
 end
 
 let spec = Mock_access.make_spec (module Impl)
+
+let clear_files ~mock_id =
+  let db = get_db () in
+  Delete_mock_files.exec db ~mock_id
 (* /@axiom: mocks.md#mockaccess--warstwa-dostępu-do-sqlite *)

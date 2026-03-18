@@ -9,10 +9,11 @@ export interface Mock {
   entry_file: string;
   created_at: string;
   updated_at: string;
+  ai_session_id: string;
 }
 
 export function encodeMock(v: Mock): unknown[] {
-  return [v.id, v.project_id, v.name, v.slug, v.status, v.entry_file, v.created_at, v.updated_at];
+  return [v.id, v.project_id, v.name, v.slug, v.status, v.entry_file, v.created_at, v.updated_at, v.ai_session_id];
 }
 
 export function decodeMock(wire: unknown[]): Mock {
@@ -25,6 +26,7 @@ export function decodeMock(wire: unknown[]): Mock {
     entry_file: wire[5] as string,
     created_at: wire[6] as string,
     updated_at: wire[7] as string,
+    ai_session_id: wire[8] as string,
   };
 }
 
@@ -150,6 +152,22 @@ export function decodeAddFileReq(wire: unknown[]): AddFileReq {
   };
 }
 
+export interface SetAiSessionReq {
+  id: number;
+  ai_session_id: string;
+}
+
+export function encodeSetAiSessionReq(v: SetAiSessionReq): unknown[] {
+  return [v.id, v.ai_session_id];
+}
+
+export function decodeSetAiSessionReq(wire: unknown[]): SetAiSessionReq {
+  return {
+    id: wire[0] as number,
+    ai_session_id: wire[1] as string,
+  };
+}
+
 export interface Ok {
   ok: boolean;
 }
@@ -201,6 +219,7 @@ export interface Impl {
   delete(req: IdReq): Promise<Ok>;
   add_file(req: AddFileReq): Promise<MockFile>;
   list_files(req: IdReq): Promise<MockFileList>;
+  set_ai_session(req: SetAiSessionReq): Promise<Mock>;
 }
 
 export const Proxy: Impl = {
@@ -227,5 +246,8 @@ export const Proxy: Impl = {
   },
   async list_files(req) {
     return decodeMockFileList(await rpc("MockAccess", "list_files", encodeIdReq(req)) as unknown[]);
+  },
+  async set_ai_session(req) {
+    return decodeMock(await rpc("MockAccess", "set_ai_session", encodeSetAiSessionReq(req)) as unknown[]);
   },
 };

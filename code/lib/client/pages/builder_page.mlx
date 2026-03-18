@@ -1,0 +1,91 @@
+(* @axiom: admin-ui.md#strona-budowania-nowego-mockupu *)
+Well.get "/projects/:id/mocks/new" @@
+Api_auth.require_auth (fun req ->
+let open Html in
+let ctx = Well.rpc_ctx req in
+let id = int_of_string (Well.param req "id") in
+let project = Project_access.get ~ctx ~id in
+Api_auth.ensure_project_owner req project;
+<Layout title=("Smock — New Mockup") req=req>
+(raw (Printf.sprintf {|<div class="builder-view" id="builder-view" data-project-id="%d" data-token="%s" data-api-key="%s">|} project.id (Html.escape_html project.token) (Html.escape_html project.api_key)))
+  <div class_="builder-toolbar">
+    <a href=("/projects/" ^ string_of_int project.id) class_="builder-back">(txt "Projekt")</a>
+    (raw {|<input type="text" class="builder-name-input" id="mock-name-input" placeholder="Nazwa mockupu..." />|})
+    <div class_="viewer-controls">
+      (raw {|<button class="viewport-btn active" data-viewport="desktop">Desktop</button>|})
+      (raw {|<button class="viewport-btn" data-viewport="mobile">Mobile</button>|})
+    </div>
+  </div>
+  <div class_="builder-content">
+    <div class_="iframe-wrapper" id="iframe-wrapper">
+      <div class_="builder-placeholder" id="builder-placeholder">
+        <p>(txt "Mockup pojawi się tutaj po wygenerowaniu przez AI")</p>
+      </div>
+      (raw {|<iframe id="mock-iframe" style="display:none"></iframe>|})
+    </div>
+    (raw (Printf.sprintf {|<smock-ai-chat project-id="%d" mock-name=""></smock-ai-chat>|} project.id))
+  </div>
+(raw {|</div>|})
+(raw {|<script type="module" src="/static/well.js"></script>|})
+(raw {|<script type="module" src="/static/mock-viewer.js"></script>|})
+(raw {|<script type="module" src="/static/smock-ai-chat.js"></script>|})
+(raw {|<script>
+document.addEventListener('mock-updated', function(e) {
+  var iframe = document.getElementById('mock-iframe');
+  var placeholder = document.getElementById('builder-placeholder');
+  var viewer = document.getElementById('builder-view');
+  var token = viewer.dataset.token;
+  var detail = e.detail || {};
+  if (detail.slug) {
+    placeholder.style.display = 'none';
+    iframe.style.display = 'block';
+    iframe.src = '/p/' + token + '/' + detail.slug + '/f/' + (detail.entryFile || 'index.html') + '?t=' + Date.now();
+  }
+});
+</script>|})
+</Layout>)
+;;
+(* /@axiom: admin-ui.md#strona-budowania-nowego-mockupu *)
+
+(* @axiom: admin-ui.md#strona-edycji-istniejącego-mockupu *)
+Well.get "/projects/:id/mocks/:mock_id/edit" @@
+Api_auth.require_auth (fun req ->
+let open Html in
+let ctx = Well.rpc_ctx req in
+let id = int_of_string (Well.param req "id") in
+let project = Project_access.get ~ctx ~id in
+Api_auth.ensure_project_owner req project;
+let mock_id = int_of_string (Well.param req "mock_id") in
+let mock = Mock_access.get ~ctx ~id:mock_id in
+if mock.project_id <> project.id then failwith "Access denied";
+let base_url = "/p/" ^ project.token ^ "/" ^ mock.slug ^ "/f/" in
+<Layout title=("Smock — Edit: " ^ mock.name) req=req>
+(raw (Printf.sprintf {|<div class="builder-view" id="builder-view" data-project-id="%d" data-token="%s" data-api-key="%s" data-mock-id="%d" data-mock-slug="%s" data-base-url="%s" data-entry-file="%s">|} project.id (Html.escape_html project.token) (Html.escape_html project.api_key) mock.id (Html.escape_html mock.slug) (Html.escape_html base_url) (Html.escape_html mock.entry_file)))
+  <div class_="builder-toolbar">
+    <a href=("/projects/" ^ string_of_int project.id) class_="builder-back">(txt "Projekt")</a>
+    <h2 class_="builder-mock-name">(txt mock.name)</h2>
+    <span class_=("status status-" ^ mock.status)>(txt mock.status)</span>
+    <div class_="viewer-controls">
+      (raw {|<button class="viewport-btn active" data-viewport="desktop">Desktop</button>|})
+      (raw {|<button class="viewport-btn" data-viewport="mobile">Mobile</button>|})
+    </div>
+  </div>
+  <div class_="builder-content">
+    <div class_="iframe-wrapper" id="iframe-wrapper">
+      (raw (Printf.sprintf {|<iframe id="mock-iframe" src="%s"></iframe>|} (Html.escape_html (base_url ^ mock.entry_file))))
+    </div>
+    (raw (Printf.sprintf {|<smock-ai-chat project-id="%d" mock-id="%d" session-id="%s" mock-name="%s"></smock-ai-chat>|} project.id mock.id (Html.escape_html mock.ai_session_id) (Html.escape_html mock.name)))
+  </div>
+(raw {|</div>|})
+(raw {|<script type="module" src="/static/well.js"></script>|})
+(raw {|<script type="module" src="/static/mock-viewer.js"></script>|})
+(raw {|<script type="module" src="/static/smock-ai-chat.js"></script>|})
+(raw {|<script>
+document.addEventListener('mock-updated', function(e) {
+  var iframe = document.getElementById('mock-iframe');
+  iframe.src = iframe.src.split('?')[0] + '?t=' + Date.now();
+});
+</script>|})
+</Layout>)
+;;
+(* /@axiom: admin-ui.md#strona-edycji-istniejącego-mockupu *)

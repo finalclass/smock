@@ -217,6 +217,9 @@ let () =
         (* List files *)
         let files = Mock_access.list_files ~ctx ~id:mock.id in
         expect (List.length files.files) |> to_equal_int 1;
+        (* Set AI session *)
+        let with_session = Mock_access.set_ai_session ~ctx ~id:mock.id ~ai_session_id:"test-session-123" in
+        expect (with_session.ai_session_id) |> to_equal_string "test-session-123";
         (* Delete *)
         let ok = Mock_access.delete ~ctx ~id:mock.id in
         expect ok.ok |> to_be_true;
