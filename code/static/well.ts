@@ -19,7 +19,7 @@ export interface HookInstance {
 
 export interface WellChannel {
   on(event: string, cb: (payload: unknown) => void): WellChannel;
-  push(event: string, payload?: unknown): void;
+  push(event: string, payload?: unknown): Promise<unknown>;
   leave(): void;
 }
 
@@ -321,9 +321,18 @@ export class Well {
   private connectLive() {
     const proto = location.protocol === "https:" ? "wss:" : "ws:";
     const url = `${proto}//${location.host}${this.livePath}`;
-    this.liveWs = new WebSocket(url);
 
-    this.liveWs.onopen = () => {
+    // Reuse pre-opened WS from inline <head> script (avoids HTTP/1.1
+    // connection pool exhaustion when iframes load from same origin)
+    const preWs = (window as any).__wellPreWs as WebSocket | undefined;
+    delete (window as any).__wellPreWs;
+    if (preWs && (preWs.readyState === WebSocket.CONNECTING || preWs.readyState === WebSocket.OPEN)) {
+      this.liveWs = preWs;
+    } else {
+      this.liveWs = new WebSocket(url);
+    }
+
+    const onOpen = () => {
       console.log("[well] WS open", performance.now().toFixed(0) + "ms");
       this.liveReconnectDelay = 500;
       const queryParams = this.parseQueryParams(location.search);
@@ -336,6 +345,13 @@ export class Well {
         }));
       });
     };
+
+    // If pre-opened WS is already connected, fire onOpen immediately
+    if (this.liveWs.readyState === WebSocket.OPEN) {
+      onOpen();
+    } else {
+      this.liveWs.onopen = onOpen;
+    }
 
     this.liveWs.onmessage = (event: MessageEvent) => {
       let msg: Record<string, unknown>;
@@ -351,7 +367,7 @@ export class Well {
           if (lv) {
             const html = msg.html as string;
             lv.cachedHtml = html;
-            this.morph(lv.el, html);
+            lv.el.innerHTML = html;
             lv.el.classList.remove("lv-loading");
             this.mountHooks(lv.el);
           }
@@ -574,6 +590,8 @@ export class Well {
       // Click action
       const clickTarget = target.closest("[data-lv-click]");
       if (!clickTarget) return;
+      const confirmMsg = clickTarget.getAttribute("data-lv-confirm");
+      if (confirmMsg && !window.confirm(confirmMsg)) return;
       const action = clickTarget.getAttribute("data-lv-click");
       const topic = this.findLiveView(clickTarget);
       if (topic && action) {
@@ -632,6 +650,14 @@ export class Well {
     });
   }
 
+  // ── Public LiveView API ─────────────────────────────────────────
+
+  /** Send a message to a LiveView from external JS. */
+  pushLive(msg: unknown, topic?: string) {
+    const t = topic ?? this.liveViews.keys().next().value;
+    if (t) this.sendLiveMsg(t, msg);
+  }
+
   // ── Channel API ──────────────────────────────────────────────────
 
   channel(topic: string): WellChannel {
@@ -680,6 +706,14 @@ export class Well {
       if (type === "event" && channel) {
         const eventName = (msg.event as string) ?? "message";
         channel._dispatch(eventName, msg.payload);
+      } else if (type === "join_ok" && channel) {
+        channel._dispatch("join_ok", msg.state);
+      } else if (type === "reply" && channel) {
+        const eventName = (msg.event as string) ?? "";
+        channel._resolveReply(eventName, msg.payload);
+      } else if (type === "error" && channel) {
+        const eventName = (msg.event as string) ?? "";
+        channel._rejectReply(eventName, msg.reason as string);
       }
     };
 
@@ -753,6 +787,7 @@ export class Well {
 class ChannelInstance implements WellChannel {
   private listeners = new Map<string, ((payload: unknown) => void)[]>();
   private joined = false;
+  private pendingReplies = new Map<string, { resolve: (v: unknown) => void; reject: (e: Error) => void }>();
 
   constructor(
     private topic: string,
@@ -766,8 +801,11 @@ class ChannelInstance implements WellChannel {
     return this;
   }
 
-  push(event: string, payload?: unknown) {
+  push(event: string, payload?: unknown): Promise<unknown> {
     this.well._sendChannel({ type: "push", channel: this.topic, event, payload: payload ?? null });
+    return new Promise((resolve, reject) => {
+      this.pendingReplies.set(event, { resolve, reject });
+    });
   }
 
   leave() {
@@ -790,6 +828,24 @@ class ChannelInstance implements WellChannel {
     // Also dispatch to "*" wildcard listeners
     const wildcardCbs = this.listeners.get("*");
     if (wildcardCbs) wildcardCbs.forEach((cb) => cb(payload));
+  }
+
+  /** @internal */
+  _resolveReply(event: string, payload: unknown) {
+    const pending = this.pendingReplies.get(event);
+    if (pending) {
+      this.pendingReplies.delete(event);
+      pending.resolve(payload);
+    }
+  }
+
+  /** @internal */
+  _rejectReply(event: string, reason: string) {
+    const pending = this.pendingReplies.get(event);
+    if (pending) {
+      this.pendingReplies.delete(event);
+      pending.reject(new Error(reason));
+    }
   }
 }
 

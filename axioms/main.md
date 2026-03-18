@@ -16,7 +16,7 @@ Smock (Supermok) to platforma do review UI — alternatywa dla Figmy w kontekśc
 - **Slug** — wersja nazwy przyjazna URL-om (lowercase, myślniki zamiast spacji)
 - **Entry file** — domyślny plik HTML wyświetlany po otwarciu mocka (domyślnie index.html)
 - **Template processing** — jednorazowe przetwarzanie szablonów przy uploadzie: layout ({{layout: file}}) → yield ({{yield name}}) → bloki ({{name}}...{{/name}})
-- **Serwer testowy** - serwer do testów: https://smock.finalclass.net (lokalnie: http://localhost:6000)
+- **Serwer testowy** - serwer do testów: https://smock.finalclass.net (lokalnie: http://localhost:6500)
 
 ## Labels
 
@@ -39,6 +39,9 @@ Jeśli dany aksjomat się zmienił w etapie weryfikacji przeprowadź wdrożenie 
 Uruchom lintery do sprawdzania kodu
 - dla ocaml: `dune @check`
 - dla ts: `bun tsc --noEmit`
+
+### [ui] @satisfaction(0.8) +browser
+Sprawdzenie interfejsu użytkownika pod kątem "ładności" oraz dostępności. To znaczy: czy wszystko jest widoczne, czy kontrasty nie są za słabe ale też czy wszystko jest spójne z restą interfajsu aplikacji
 
 ### [scenario] @satisfaction(0.9) +browser
 AI chodzi po stronie i ocenia na ile dany aksjomat jest spelniony w skali od 0 do 1

@@ -111,3 +111,5 @@ Plik `static/ts/smock-comments.ts` kompilowany przez bun (reguła w `static/dune
 [scenario] Po dodaniu komentarza, treść komentarza jest widoczna w "chmurce" danego wątku
 
 [ui] Jeśli dodajemy komentarz po prawej stronie to chmurka komentarz powinna być widoczna a nie ucięta przez iframe mocka
+
+[e2e] Wątek (chmurka) można zamknąć klikając w "x" w prawym górnym rogu chmurki lub klikając w dowolne miejsce na stronie poza chmurką

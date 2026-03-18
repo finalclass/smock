@@ -3,7 +3,7 @@
 ### Konfiguracja aplikacji
 
 #### Punkt wejścia aplikacji
-bin/main.ml wywołuje App.run(). App.run() konfiguruje middleware (error_handler, auth_error_handler, logger, CSRF selektywny, rate_limit), rejestruje serwisy (ProjectAccess, MockAccess, CommentAccess), wystawia CommentAccess jako RPC (`Well.Service.expose "CommentAccess"`), rejestruje kanał `comments:*`, uruchamia seed usera, mount statycznych plików (/static → static/), i startuje serwer na porcie 6000 (zarówno lokalnie jak i na produkcji).
+bin/main.ml wywołuje App.run(). App.run() konfiguruje middleware (error_handler, auth_error_handler, logger, CSRF selektywny, rate_limit), rejestruje serwisy (ProjectAccess, MockAccess, CommentAccess), wystawia CommentAccess jako RPC (`Well.Service.expose "CommentAccess"`), rejestruje kanał `comments:*`, uruchamia seed usera, mount statycznych plików (/static → static/), i startuje serwer na porcie 6500 (zarówno lokalnie jak i na produkcji).
 
 #### Middleware stack
 Kolejność middleware: (1) Well.error_handler — łapie wyjątki, (2) auth_error_handler — Auth_denied → redirect /login, (3) Well.logger — logowanie requestów, (4) CSRF selektywny (nie dla /api/*), (5) rate_limit (60/10s).
@@ -14,7 +14,7 @@ Kolejność middleware: (1) Well.error_handler — łapie wyjątki, (2) auth_err
 deploy.sh działa lokalnie na serwerze (smock jest na tej samej maszynie): (1) `well release` tworzy archiwum, (2) extract do /opt/smock, (3) systemctl restart smock. Skrypt NIE ustawia PRODUCTION=true — TLS terminuje Caddy.
 
 #### Systemd service
-smock.service: Type=simple, WorkingDirectory=/opt/smock, ExecStart=/opt/smock/bin/smock, Restart=on-failure (3s), EnvironmentFile=/opt/smock/.env. Hardening: NoNewPrivileges, ProtectSystem=strict, ProtectHome, ReadWritePaths=/opt/smock, PrivateTmp. Port 6000 (plain HTTP). TLS terminuje Caddy reverse proxy (smock.finalclass.net → localhost:6000).
+smock.service: Type=simple, WorkingDirectory=/opt/smock, ExecStart=/opt/smock/bin/smock, Restart=on-failure (3s), EnvironmentFile=/opt/smock/.env. Hardening: NoNewPrivileges, ProtectSystem=strict, ProtectHome, ReadWritePaths=/opt/smock, PrivateTmp. Port 6500 (plain HTTP). TLS terminuje Caddy reverse proxy (smock.finalclass.net → localhost:6500).
 
 #### Caddy reverse proxy
 [smoketest]
@@ -23,11 +23,11 @@ Caddy na serwerze (fcmain) terminuje TLS i proxy'uje do aplikacji. Konfiguracja 
 ```
 smock.finalclass.net {
   tls { issuer acme { dir https://acme.zerossl.com/v2/DV90; email admin@finalclass.net } }
-  reverse_proxy localhost:6000
+  reverse_proxy localhost:6500
 }
 ```
 
-Port w `reverse_proxy` MUSI zgadzać się z portem w `Well.run ~port:...` (obecnie 6000). Przy zmianie portu w kodzie należy zaktualizować Caddyfile na serwerze (`ssh fcmain` + `systemctl reload caddy`).
+Port w `reverse_proxy` MUSI zgadzać się z portem w `Well.run ~port:...` (obecnie 6500). Przy zmianie portu w kodzie należy zaktualizować Caddyfile na serwerze (`ssh fcmain` + `systemctl reload caddy`).
 
 #### Zmienne środowiskowe na serwerze
 Plik `/opt/smock/.env` zawiera:

@@ -28,18 +28,6 @@ interface Thread {
   comments: Comment[];
 }
 
-// ── API helpers (use /api/comments/* instead of RPC) ────────────────
-
-async function apiPost<T>(endpoint: string, body: unknown): Promise<T> {
-  const res = await fetch(`/api/comments/${endpoint}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error(`API ${endpoint}: ${res.status}`);
-  return res.json();
-}
-
 // ── Time formatting ─────────────────────────────────────────────────
 
 function timeAgo(isoStr: string): string {
@@ -91,17 +79,8 @@ export class SmockComments extends LitElement {
     this.pagePath = this.entryFile;
     this.loadAuthorName();
 
-    // Load initial threads via API
-    this.loadThreads();
-
     // @axiom: comments.md#kanał-commentsmockid
-    // Connect to Well Channel for real-time updates
-    if ((window as any).well) {
-      this.channel = (window as any).well.channel(`comments:${this.mockId}`);
-      this.channel.on('message', (payload: any) => {
-        this.handleBusEvent(payload);
-      });
-    }
+    this.initChannel();
     // /@axiom: comments.md#kanał-commentsmockid
 
     // Wait for DOM to be ready, then attach to external elements
@@ -109,6 +88,37 @@ export class SmockComments extends LitElement {
       this.attachExternalElements();
     });
   }
+
+  // @axiom: comments.md#kanał-commentsmockid
+  // Connect to Well Channel — join delivers initial thread list.
+  // well.js may load after this component, so retry if not yet available.
+  private initChannel() {
+    const well = (window as any).well;
+    if (!well) {
+      setTimeout(() => this.initChannel(), 50);
+      return;
+    }
+    this.channel = well.channel(`comments:${this.mockId}`);
+    this.channel.on('join_ok', (state: any) => {
+      if (state && state.threads) {
+        this.threads = state.threads;
+        this.renderPins();
+      }
+    });
+    this.channel.on('thread_created', (payload: any) => {
+      this.handleChannelEvent('thread_created', payload);
+    });
+    this.channel.on('comment_added', (payload: any) => {
+      this.handleChannelEvent('comment_added', payload);
+    });
+    this.channel.on('thread_resolved', (payload: any) => {
+      this.handleChannelEvent('thread_resolved', payload);
+    });
+    this.channel.on('thread_deleted', (payload: any) => {
+      this.handleChannelEvent('thread_deleted', payload);
+    });
+  }
+  // /@axiom: comments.md#kanał-commentsmockid
 
   disconnectedCallback() {
     super.disconnectedCallback();
@@ -119,39 +129,53 @@ export class SmockComments extends LitElement {
     this.detachExternalListeners();
   }
 
-  // ── Data loading ────────────────────────────────────────────────
+  // ── Channel event handler (real-time updates) ──────────────────
 
-  private async loadThreads() {
-    try {
-      const result = await apiPost<{ threads: Thread[] }>('list', { mock_id: this.mockId });
-      this.threads = result.threads;
-      this.renderPins();
-    } catch (e) {
-      console.error('[smock-comments] Failed to load threads:', e);
-    }
-  }
-
-  // ── Bus event handler (from channel) ────────────────────────────
-
-  private handleBusEvent(payload: any) {
-    // Well MessageBus events come as polymorphic variant arrays: ["ThreadCreated", [mock_id, thread_id]]
-    if (!Array.isArray(payload)) return;
-    const [variant, args] = payload;
-    if (!Array.isArray(args)) return;
-
-    switch (variant) {
-      case 'ThreadCreated':
-      case 'CommentAdded':
-      case 'ThreadResolved':
-      case 'ThreadDeleted': {
-        const [mockId] = args;
-        if (mockId === this.mockId) {
-          this.loadThreads();
+  // @axiom: comments.md#kanał-commentsmockid
+  private handleChannelEvent(event: string, payload: any) {
+    switch (event) {
+      case 'thread_created': {
+        // payload is full thread JSON — add to local list (dedup: may already be added from push reply)
+        const thread = payload as Thread;
+        if (!this.threads.some(t => t.id === thread.id)) {
+          this.threads = [thread, ...this.threads];
         }
+        this.renderPins();
+        break;
+      }
+      case 'comment_added': {
+        // payload is a comment — add to the matching thread (dedup: may already be added from push reply)
+        const comment = payload as Comment;
+        this.threads = this.threads.map(t =>
+          t.id === comment.thread_id
+            ? { ...t, comments: t.comments.some(c => c.id === comment.id) ? t.comments : [...t.comments, comment] }
+            : t
+        );
+        this.renderPins();
+        break;
+      }
+      case 'thread_resolved': {
+        // payload is full thread JSON with resolved=true
+        const resolved = payload as Thread;
+        this.threads = this.threads.map(t =>
+          t.id === resolved.id ? resolved : t
+        );
+        this.renderPins();
+        break;
+      }
+      case 'thread_deleted': {
+        // payload is {thread_id: int}
+        const threadId = payload.thread_id;
+        this.threads = this.threads.filter(t => t.id !== threadId);
+        if (this.openThreadId === threadId) {
+          this.openThreadId = null;
+        }
+        this.renderPins();
         break;
       }
     }
   }
+  // /@axiom: comments.md#kanał-commentsmockid
 
   // ── Author name ─────────────────────────────────────────────────
 
@@ -379,12 +403,15 @@ export class SmockComments extends LitElement {
     // Don't handle clicks on pins or bubbles
     if (target.classList.contains('comment-pin') || target.closest('.comment-bubble')) return;
 
-    // If compose is open, close it instead of opening a new one
-    if (this.activeCompose) {
+    // @axiom: comments.md#flow-tworzenia-nowego-wątku
+    // If compose or thread bubble is open, close it instead of opening a new one
+    if (this.activeCompose || this.openThreadId) {
       this.activeCompose = null;
+      this.openThreadId = null;
       this.renderPins();
       return;
     }
+    // /@axiom: comments.md#flow-tworzenia-nowego-wątku
 
     const overlayW = this.overlay!.offsetWidth;
     const overlayH = this.overlay!.offsetHeight;
@@ -414,25 +441,28 @@ export class SmockComments extends LitElement {
     this.renderPins();
   }
 
-  // ── API commands ────────────────────────────────────────────────
+  // ── Channel commands ────────────────────────────────────────────
 
   // @axiom: comments.md#flow-tworzenia-nowego-wątku-figma-style
   private async createThread(body: string) {
-    if (!this.activeCompose || !body.trim() || this.submitting) return;
+    if (!this.activeCompose || !body.trim() || this.submitting || !this.channel) return;
     this.submitting = true;
     this.renderPins(); // re-render to show loading state
     try {
-      const thread = await apiPost<Thread>('create_thread', {
+      const thread = await this.channel.push('create_thread', {
         mock_id: this.mockId,
         page_path: this.pagePath,
         x_pct: this.activeCompose.x,
         y_pct: this.activeCompose.y,
         author_name: this.authorName,
         body: body.trim(),
-      });
+      }) as Thread;
+      // Add thread to local state immediately (broadcast may arrive later, dedup in handleChannelEvent)
+      if (!this.threads.some(t => t.id === thread.id)) {
+        this.threads = [thread, ...this.threads];
+      }
       this.activeCompose = null;
       this.openThreadId = thread.id;
-      await this.loadThreads();
     } catch (e) {
       console.error('[smock-comments] create_thread failed:', e);
     } finally {
@@ -443,16 +473,21 @@ export class SmockComments extends LitElement {
 
   // @axiom: comments.md#flow-odpowiadania-w-wątku
   private async addComment(threadId: number, body: string) {
-    if (!body.trim() || this.submitting) return;
+    if (!body.trim() || this.submitting || !this.channel) return;
     this.submitting = true;
     this.renderPins(); // re-render to show loading state
     try {
-      await apiPost<Comment>('add_comment', {
+      const comment = await this.channel.push('add_comment', {
         thread_id: threadId,
         author_name: this.authorName,
         body: body.trim(),
-      });
-      await this.loadThreads();
+      }) as Comment;
+      // Update local state from reply (broadcast deduplicates)
+      this.threads = this.threads.map(t =>
+        t.id === comment.thread_id
+          ? { ...t, comments: t.comments.some(c => c.id === comment.id) ? t.comments : [...t.comments, comment] }
+          : t
+      );
     } catch (e) {
       console.error('[smock-comments] add_comment failed:', e);
     } finally {
@@ -463,9 +498,14 @@ export class SmockComments extends LitElement {
 
   // @axiom: comments.md#resolve-i-usunięcie-wątku
   private async resolveThread(threadId: number) {
+    if (!this.channel) return;
     try {
-      await apiPost<Thread>('resolve_thread', { id: threadId });
-      await this.loadThreads();
+      const resolved = await this.channel.push('resolve_thread', { thread_id: threadId }) as Thread;
+      // Update local state from reply (broadcast deduplicates)
+      this.threads = this.threads.map(t =>
+        t.id === resolved.id ? resolved : t
+      );
+      this.renderPins();
     } catch (e) {
       console.error('[smock-comments] resolve_thread failed:', e);
     }
@@ -476,11 +516,16 @@ export class SmockComments extends LitElement {
       this.confirmDeleteId = threadId;
       return;
     }
+    if (!this.channel) return;
     try {
-      await apiPost<{ ok: boolean }>('delete_thread', { id: threadId });
+      await this.channel.push('delete_thread', { thread_id: threadId });
+      // Update local state from reply
+      this.threads = this.threads.filter(t => t.id !== threadId);
       this.confirmDeleteId = null;
-      this.openThreadId = null;
-      await this.loadThreads();
+      if (this.openThreadId === threadId) {
+        this.openThreadId = null;
+      }
+      this.renderPins();
     } catch (e) {
       console.error('[smock-comments] delete_thread failed:', e);
     }
@@ -603,9 +648,9 @@ export class SmockComments extends LitElement {
 
     const bubble = document.createElement('div');
     bubble.className = 'comment-bubble';
-    // Flip bubble to the left when pin is near the right edge
-    if (x > 70) {
-      bubble.classList.add('comment-bubble-left');
+    // Flip bubble to the left of pin when near right edge (>65%)
+    if (x > 65) {
+      bubble.classList.add('bubble-flip-left');
     }
     bubble.style.left = x + '%';
     bubble.style.top = y + '%';
@@ -728,6 +773,19 @@ export class SmockComments extends LitElement {
 
       setTimeout(() => textarea.focus(), 0);
     }
+
+    // @axiom: comments.md#walidacja
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'bubble-close-btn';
+    closeBtn.textContent = '\u00d7';
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.activeCompose = null;
+      this.openThreadId = null;
+      this.renderPins();
+    });
+    bubble.appendChild(closeBtn);
+    // /@axiom: comments.md#walidacja
 
     this.overlay!.appendChild(bubble);
   }

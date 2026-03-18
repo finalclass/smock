@@ -258,10 +258,10 @@ a:hover { text-decoration: underline; }
   cursor: crosshair;
 }
 /* /@axiom: comments.md#tryb-komentowania-vs-nawigacja */
-/* /@axiom: comments.md#renderowanie-pinów */
+/* /@axiom: comments.md#synchronizacja-overlay-z-iframe */
 /* /@axiom: client-ui.md#viewer-mocka--layout */
 
-/* @axiom: comments.md#panel-boczny */
+/* @axiom: comments.md#flow-tworzenia-nowego-wątku */
 /* Comments panel */
 .comments-panel {
   width: 320px; border-left: 1px solid var(--border); background: var(--card-bg);
@@ -330,9 +330,9 @@ a:hover { text-decoration: underline; }
   width: 100%; padding: 0.5rem 1rem; font-size: 0.8rem;
   border-radius: var(--radius);
 }
-/* /@axiom: comments.md#panel-boczny */
+/* /@axiom: comments.md#flow-tworzenia-nowego-wątku */
 
-/* @axiom: comments.md#renderowanie-wątku-w-panelu */
+/* @axiom: comments.md#renderowanie-pinów */
 .comment-item {
   padding: 0.75rem; border-bottom: 1px solid var(--border);
 }
@@ -352,7 +352,7 @@ a:hover { text-decoration: underline; }
 .btn-cancel-delete { color: var(--muted); }
 .delete-confirm-group { display: inline-flex; gap: 0.375rem; }
 /* /@axiom: comments.md#resolve-i-usunięcie-wątku */
-/* /@axiom: comments.md#renderowanie-wątku-w-panelu */
+/* /@axiom: comments.md#renderowanie-pinów */
 
 /* @axiom: comments.md#renderowanie-resolved-wątków */
 .resolved-section { margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border); }
@@ -398,7 +398,7 @@ live-view.lv-loading { opacity: 0.5; pointer-events: none; }
   padding: 0.75rem; min-width: 240px; max-width: 320px;
   transform: translate(8px, -50%);
 }
-.comment-bubble.comment-bubble-left {
+.comment-bubble.bubble-flip-left {
   transform: translate(calc(-100% - 8px), -50%);
 }
 .comment-bubble .bubble-textarea {
@@ -428,6 +428,16 @@ live-view.lv-loading { opacity: 0.5; pointer-events: none; }
   font-size: 0.75rem; padding: 0.375rem 0.5rem;
 }
 .comment-bubble .bubble-cancel-compose-btn:hover { color: var(--fg); }
+/* @axiom: comments.md#walidacja */
+.bubble-close-btn {
+  position: absolute; top: 0.25rem; right: 0.25rem;
+  background: none; border: none; cursor: pointer;
+  font-size: 1.1rem; line-height: 1; color: var(--muted);
+  padding: 0.125rem 0.375rem; border-radius: 4px;
+  z-index: 1;
+}
+.bubble-close-btn:hover { color: var(--fg); background: #f0f0f0; }
+/* /@axiom: comments.md#flow-tworzenia-nowego-wątku */
 .comment-bubble .bubble-compose-actions,
 .comment-bubble .bubble-reply-actions {
   display: flex; gap: 0.5rem; align-items: center;
@@ -482,7 +492,7 @@ live-view.lv-loading { opacity: 0.5; pointer-events: none; }
   line-height: 1.3;
 }
 .pin-tooltip strong { font-weight: 600; }
-/* /@axiom: comments.md#flow-tworzenia-nowego-wątku-figma-style */
+/* /@axiom: comments.md#flow-tworzenia-nowego-wątku */
 /* /@axiom: comments.md#renderowanie-pinów */
 
 /* @axiom: comments.md#wszystkie-komentarze */

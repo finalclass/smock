@@ -70,11 +70,17 @@ async function prepareAuthorName(page: Page) {
 }
 
 // Helper: create a thread by clicking on the overlay
+// @axiom: comments.md#tryb-komentowania-vs-nawigacja
 async function createThread(page: Page, body: string, position = { x: 0.5, y: 0.3 }) {
   // Ensure iframe is loaded and overlay is ready
   const iframe = page.locator('#mock-iframe');
   await iframe.waitFor({ state: 'attached', timeout: 10000 });
   await page.waitForTimeout(500);
+
+  // Enable comment mode before clicking overlay (overlay has pointer-events: none by default)
+  const commentModeBtn = page.locator('.comment-mode-opt[data-mode="comment"]');
+  await commentModeBtn.click();
+  await page.waitForTimeout(200);
 
   const overlay = page.locator('#comment-overlay');
   const overlayBox = await overlay.boundingBox();
@@ -96,8 +102,10 @@ async function createThread(page: Page, body: string, position = { x: 0.5, y: 0.
   await expect(bubble).toBeVisible({ timeout: 5000 });
   await bubble.locator('.bubble-textarea').fill(body);
   await bubble.locator('.bubble-send-btn').click();
-  await page.waitForTimeout(1000);
+  // Wait for compose to transform into thread view (confirms API succeeded + loadThreads done)
+  await expect(page.locator('.comment-bubble .bubble-thread')).toBeVisible({ timeout: 10000 });
 }
+// /@axiom: comments.md#tryb-komentowania-vs-nawigacja
 
 test.describe('Comments — Thread-based system [e2e]', () => {
   let token: string;
@@ -233,7 +241,11 @@ test.describe('Comments — Thread-based system [e2e]', () => {
     await prepareAuthorName(page);
 
     const suffix = Date.now().toString(36);
-    await createThread(page, `Hide resolved test ${suffix}`, { x: 0.8, y: 0.8 });
+    await createThread(page, `Hide resolved test ${suffix}`, { x: 0.3, y: 0.3 });
+
+    // Close any open bubble first, then wait for panel to update
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(500);
 
     // Resolve the thread by clicking on thread item in panel, then resolve in bubble
     const smockComments2 = page.locator('smock-comments');
@@ -280,6 +292,11 @@ test.describe('Comments — Thread-based system [e2e]', () => {
     const stored = await page.evaluate(() => localStorage.getItem('smock_author'));
     expect(stored).toBeNull();
 
+    // Enable comment mode before clicking overlay
+    const commentModeBtn = page.locator('.comment-mode-opt[data-mode="comment"]');
+    await commentModeBtn.click();
+    await page.waitForTimeout(200);
+
     // Click on overlay — should show name prompt in bubble
     const overlay = page.locator('#comment-overlay');
     const overlayBox = await overlay.boundingBox();
@@ -300,6 +317,70 @@ test.describe('Comments — Thread-based system [e2e]', () => {
     await expect(textarea).toBeVisible({ timeout: 5000 });
   });
   // /@axiom: comments.md#zmiana-imienia
+
+  // @axiom: comments.md#walidacja
+  test('Close bubble via "x" button', async ({ page }) => {
+    await page.goto(`/p/${token}/${mockSlug}`);
+    await page.waitForSelector('smock-comments');
+    await prepareAuthorName(page);
+
+    const suffix = Date.now().toString(36);
+    await createThread(page, `Close x test ${suffix}`);
+
+    // Open thread bubble via panel click (avoids pin overlap issues)
+    const smockComments = page.locator('smock-comments');
+    const threadItem = smockComments.locator('.thread-item').first();
+    await expect(threadItem).toBeVisible({ timeout: 10000 });
+    await threadItem.click();
+    await page.waitForTimeout(500);
+
+    const bubble = page.locator('.comment-bubble');
+    await expect(bubble).toBeVisible({ timeout: 5000 });
+
+    // Click "x" close button
+    const closeBtn = page.locator('.bubble-close-btn');
+    await closeBtn.click();
+    await page.waitForTimeout(300);
+
+    // Verify bubble disappears
+    await expect(bubble).not.toBeVisible();
+  });
+
+  test('Close bubble by clicking outside on overlay', async ({ page }) => {
+    await page.goto(`/p/${token}/${mockSlug}`);
+    await page.waitForSelector('smock-comments');
+    await prepareAuthorName(page);
+
+    const suffix = Date.now().toString(36);
+    await createThread(page, `Close overlay test ${suffix}`);
+
+    // Open thread bubble via panel click
+    const smockComments = page.locator('smock-comments');
+    const threadItem = smockComments.locator('.thread-item').first();
+    await expect(threadItem).toBeVisible({ timeout: 10000 });
+    await threadItem.click();
+    await page.waitForTimeout(500);
+
+    const bubble = page.locator('.comment-bubble');
+    await expect(bubble).toBeVisible({ timeout: 5000 });
+
+    // Enable comment mode so overlay accepts clicks
+    const commentModeBtn = page.locator('.comment-mode-opt[data-mode="comment"]');
+    await commentModeBtn.click();
+    await page.waitForTimeout(200);
+
+    // Click on overlay outside the bubble to close it
+    const overlay = page.locator('#comment-overlay');
+    const overlayBox = await overlay.boundingBox();
+    if (!overlayBox) throw new Error('Overlay not found');
+    // Click far from pin position to avoid hitting pin or bubble
+    await overlay.click({ position: { x: overlayBox.width * 0.9, y: overlayBox.height * 0.9 } });
+    await page.waitForTimeout(300);
+
+    // Verify bubble disappears
+    await expect(bubble).not.toBeVisible();
+  });
+  // /@axiom: comments.md#walidacja
 
   test('Cross-page navigation — click thread from different page', async ({ page }) => {
     await page.goto(`/p/${token}/${mockSlug}`);

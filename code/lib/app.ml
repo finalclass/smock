@@ -39,13 +39,6 @@ let run () =
   (* @axiom: comments.md#serwer--handler-kanału *)
   Well.Service.expose "CommentAccess" ;
 
-  Well.Channel.channel "comments:*" (fun _req _topic ->
-    Ok { Well.Channel.subscribe = [Well.topic_name Events.comment_event] }
-  ) ;
-  (* /@axiom: comments.md#serwer--handler-kanału *)
-
-  (* @axiom: comments.md#kanał-commentsmockid *)
-  (* Client-facing comment API routes — no Bearer required, uses wire format *)
   let comment_to_json (c : Comment_access.Comment.t) =
     `Assoc [("id", `Int c.id); ("thread_id", `Int c.thread_id);
             ("author_name", `String c.author_name); ("body", `String c.body);
@@ -60,54 +53,64 @@ let run () =
             ("comments", `List (List.map comment_to_json t.comments))]
   in
 
-  Well.post "/api/comments/list" (fun req ->
-    let json = Yojson.Safe.from_string req.body in
-    let mock_id = Yojson.Safe.Util.(json |> member "mock_id" |> to_int) in
-    let ctx = Well.rpc_ctx req in
-    let result = Comment_access.list_threads_by_mock ~ctx ~mock_id in
-    Well.json (`Assoc [("threads", `List (List.map thread_to_json result.threads))])) ;
-
-  Well.post "/api/comments/create_thread" (fun req ->
-    let json = Yojson.Safe.from_string req.body in
-    let open Yojson.Safe.Util in
-    let to_number j = match j with
-      | `Float f -> f | `Int i -> float_of_int i | _ -> 0.0
-    in
-    let mock_id = json |> member "mock_id" |> to_int in
-    let page_path = json |> member "page_path" |> to_string in
-    let x_pct = json |> member "x_pct" |> to_number in
-    let y_pct = json |> member "y_pct" |> to_number in
-    let author_name = json |> member "author_name" |> to_string in
-    let body = json |> member "body" |> to_string in
-    let ctx = Well.rpc_ctx req in
-    let result = Comment_access.create_thread ~ctx ~mock_id ~page_path
-      ~x_pct ~y_pct ~author_name ~body in
-    Well.json (thread_to_json result)) ;
-
-  Well.post "/api/comments/add_comment" (fun req ->
-    let json = Yojson.Safe.from_string req.body in
-    let open Yojson.Safe.Util in
-    let thread_id = json |> member "thread_id" |> to_int in
-    let author_name = json |> member "author_name" |> to_string in
-    let body = json |> member "body" |> to_string in
-    let ctx = Well.rpc_ctx req in
-    let result = Comment_access.add_comment ~ctx ~thread_id ~author_name ~body in
-    Well.json (comment_to_json result)) ;
-
-  Well.post "/api/comments/resolve_thread" (fun req ->
-    let json = Yojson.Safe.from_string req.body in
-    let id = Yojson.Safe.Util.(json |> member "id" |> to_int) in
-    let ctx = Well.rpc_ctx req in
-    let result = Comment_access.resolve_thread ~ctx ~id in
-    Well.json (thread_to_json result)) ;
-
-  Well.post "/api/comments/delete_thread" (fun req ->
-    let json = Yojson.Safe.from_string req.body in
-    let id = Yojson.Safe.Util.(json |> member "id" |> to_int) in
-    let ctx = Well.rpc_ctx req in
-    let result = Comment_access.delete_thread ~ctx ~id in
-    Well.json (`Assoc [("ok", `Bool result.ok)])) ;
+  (* @axiom: comments.md#kanał-commentsmockid *)
+  Well.Channel.channel
+    ~on_push:(fun req _topic event payload ->
+      let open Yojson.Safe.Util in
+      let to_number j = match j with
+        | `Float f -> f | `Int i -> float_of_int i | _ -> 0.0
+      in
+      let ctx = Well.rpc_ctx req in
+      match event with
+      | "create_thread" ->
+        let mock_id = payload |> member "mock_id" |> to_int in
+        let page_path = payload |> member "page_path" |> to_string in
+        let x_pct = payload |> member "x_pct" |> to_number in
+        let y_pct = payload |> member "y_pct" |> to_number in
+        let author_name = payload |> member "author_name" |> to_string in
+        let body = payload |> member "body" |> to_string in
+        let result = Comment_access.create_thread ~ctx ~mock_id ~page_path
+          ~x_pct ~y_pct ~author_name ~body in
+        { Well.Channel.reply = Some (thread_to_json result);
+          broadcast = Some ("thread_created", thread_to_json result) }
+      | "add_comment" ->
+        let thread_id = payload |> member "thread_id" |> to_int in
+        let author_name = payload |> member "author_name" |> to_string in
+        let body = payload |> member "body" |> to_string in
+        let result = Comment_access.add_comment ~ctx ~thread_id ~author_name ~body in
+        { Well.Channel.reply = Some (comment_to_json result);
+          broadcast = Some ("comment_added", comment_to_json result) }
+      | "resolve_thread" ->
+        let thread_id = payload |> member "thread_id" |> to_int in
+        let result = Comment_access.resolve_thread ~ctx ~id:thread_id in
+        { Well.Channel.reply = Some (thread_to_json result);
+          broadcast = Some ("thread_resolved", thread_to_json result) }
+      | "delete_thread" ->
+        let thread_id = payload |> member "thread_id" |> to_int in
+        let result = Comment_access.delete_thread ~ctx ~id:thread_id in
+        { Well.Channel.reply = Some (`Assoc [("ok", `Bool result.ok)]);
+          broadcast = Some ("thread_deleted",
+            `Assoc [("thread_id", `Int thread_id)]) }
+      | _ ->
+        { Well.Channel.reply = Some (`Assoc [("error", `String "unknown command")]);
+          broadcast = None })
+    "comments:*"
+    (fun req topic ->
+      (* join — authorize and return initial thread list *)
+      let mock_id_str =
+        let len = String.length "comments:" in
+        if String.length topic > len then String.sub topic len (String.length topic - len)
+        else "0"
+      in
+      let mock_id = try int_of_string mock_id_str with _ -> 0 in
+      let ctx = Well.rpc_ctx req in
+      let result = Comment_access.list_threads_by_mock ~ctx ~mock_id in
+      let threads_json = `List (List.map thread_to_json result.threads) in
+      Ok { Well.Channel.subscribe = ["comments:*"];
+           initial_state = Some (`Assoc [("threads", threads_json)]) }
+    ) ;
   (* /@axiom: comments.md#kanał-commentsmockid *)
+  (* /@axiom: comments.md#serwer--handler-kanału *)
 
   (match Sys.getenv_opt "SMOCK_ADMIN_KEY" with
    | Some password when password <> "" ->
@@ -128,6 +131,6 @@ let run () =
 
   Well.static "/static" "static" ;
   match Sys.getenv_opt "PRODUCTION" with
-  | Some "true" -> Well.run ~port:6000 ~domain:"smock.finalclass.net" ()
-  | _ -> Well.run ~port:6000 ()
+  | Some "true" -> Well.run ~port:6500 ~domain:"smock.finalclass.net" ()
+  | _ -> Well.run ~port:6500 ()
 (* /@axiom: infrastructure.md#punkt-wejścia-aplikacji *)

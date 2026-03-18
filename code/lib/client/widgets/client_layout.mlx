@@ -9,8 +9,8 @@ let createElement ?title:(page_title = "Smock") ?(children = []) () =
       <link rel="stylesheet" href="/static/app.css" />
     </head>
     <body class_="client-body">
-      (children |> cat |> raw)
       <script type_="module" src="/static/well.js" />
+      (children |> cat |> raw)
       <script type_="module" src="/static/mock-viewer.js" />
     </body>
   </html> in
