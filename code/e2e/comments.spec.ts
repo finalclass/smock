@@ -411,4 +411,31 @@ test.describe('Comments — Thread-based system [e2e]', () => {
     // Verify we navigated back to index.html
     await expect(page.locator('#page-select')).toHaveValue('index.html', { timeout: 10000 });
   });
+
+  // @axiom: comments.md#blokada-komentarzy-dla-zatwierdzonych-moków
+  test('Comments disabled on approved mock — mode switch hidden, overlay blocked', async ({ page, request }) => {
+    // Set mock to approved
+    const data = await setupTestData(request);
+    const approvedToken = data.token;
+    const approvedApiKey = data.apiKey;
+    const approvedMockSlug = data.mockSlug;
+
+    await request.put(`/api/projects/${approvedToken}/mocks/${data.mockId}`, {
+      headers: { Authorization: `Bearer ${approvedApiKey}`, 'Content-Type': 'application/json' },
+      data: JSON.stringify({ status: 'approved' }),
+    });
+
+    await page.goto(`/p/${approvedToken}/${approvedMockSlug}`);
+    await page.waitForSelector('smock-comments');
+    await prepareAuthorName(page);
+
+    // Comment mode switch should be hidden
+    const commentModeSwitch = page.locator('#comment-mode-switch');
+    await expect(commentModeSwitch).toBeHidden();
+
+    // Existing comments should still be visible (panel renders)
+    const smockComments = page.locator('smock-comments');
+    await expect(smockComments).toBeVisible();
+  });
+  // /@axiom: comments.md#blokada-komentarzy-dla-zatwierdzonych-moków
 });

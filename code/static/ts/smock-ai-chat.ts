@@ -1,4 +1,4 @@
-// @axiom: mock-builder.md#komponent-smock-ai-chat
+// @axiom: mock-builder.md#komponent-ai-chat--smock-ai-chat
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
@@ -65,7 +65,7 @@ export class SmockAiChat extends LitElement {
 
   // ── Lifecycle ───────────────────────────────────────────────────
 
-  // @axiom: mock-builder.md#inicjalizacja-i-sesja
+  // @axiom: mock-builder.md#inicjalizacja-i-historia
   connectedCallback() {
     super.connectedCallback();
     if (this.sessionId) {
@@ -94,11 +94,11 @@ export class SmockAiChat extends LitElement {
       console.error('[smock-ai-chat] Failed to load history:', e);
     }
   }
-  // /@axiom: mock-builder.md#inicjalizacja-i-sesja
+  // /@axiom: mock-builder.md#inicjalizacja-i-historia
 
   // ── SSE Connection ────────────────────────────────────────────
 
-  // @axiom: mock-builder.md#obsługa-sse-stream
+  // @axiom: mock-builder.md#połączenie-sse
   private connectSSE() {
     if (!this.sessionId) return;
     this.closeSSE();
@@ -224,9 +224,9 @@ export class SmockAiChat extends LitElement {
       sequence: msg.sequence || 0
     }];
   }
-  // /@axiom: mock-builder.md#obsługa-sse-stream
+  // /@axiom: mock-builder.md#połączenie-sse
 
-  // @axiom: mock-builder.md#odświeżanie-podglądu-mocka
+  // @axiom: mock-builder.md#odświeżanie-podglądu
   private checkMockUpdated(content: string) {
     if (content.includes('slug') || content.includes('file_count') || content.includes('upload')) {
       try {
@@ -243,11 +243,11 @@ export class SmockAiChat extends LitElement {
       } catch (_) {}
     }
   }
-  // /@axiom: mock-builder.md#odświeżanie-podglądu-mocka
+  // /@axiom: mock-builder.md#odświeżanie-podglądu
 
   // ── Sending messages ──────────────────────────────────────────
 
-  // @axiom: mock-builder.md#pole-wprowadzania-wiadomości
+  // @axiom: mock-builder.md#pole-input--zachowanie-klawiszy
   private async sendMessage() {
     const text = this.inputText.trim();
     if (!text || this.isProcessing) return;
@@ -308,11 +308,11 @@ export class SmockAiChat extends LitElement {
       console.error('[smock-ai-chat] Stop failed:', e);
     }
   }
-  // /@axiom: mock-builder.md#pole-wprowadzania-wiadomości
+  // /@axiom: mock-builder.md#pole-input--zachowanie-klawiszy
 
   // ── Auto-scroll ───────────────────────────────────────────────
 
-  // @axiom: mock-builder.md#auto-scroll
+  // @axiom: mock-builder.md#wiadomości--auto-scroll
   private handleScroll(e: Event) {
     const el = e.target as HTMLElement;
     const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
@@ -332,7 +332,7 @@ export class SmockAiChat extends LitElement {
       }
     });
   }
-  // /@axiom: mock-builder.md#auto-scroll
+  // /@axiom: mock-builder.md#wiadomości--auto-scroll
 
   updated() {
     this.scrollToBottomIfNeeded();
@@ -340,7 +340,7 @@ export class SmockAiChat extends LitElement {
 
   // ── Styles ────────────────────────────────────────────────────
 
-  // @axiom: mock-builder.md#stylizacja-czatu
+  // @axiom: mock-builder.md#interfejs-czatu--layout-css
   static styles = css`
     :host {
       display: flex;
@@ -571,11 +571,11 @@ export class SmockAiChat extends LitElement {
       font-size: 0.9rem;
     }
   `;
-  // /@axiom: mock-builder.md#stylizacja-czatu
+  // /@axiom: mock-builder.md#interfejs-czatu--layout-css
 
   // ── Render ────────────────────────────────────────────────────
 
-  // @axiom: mock-builder.md#renderowanie-wiadomości
+  // @axiom: mock-builder.md#wyświetlanie-wiadomości-użytkownika
   render() {
     const hasMessages = this.messages.length > 0;
 
@@ -675,7 +675,7 @@ export class SmockAiChat extends LitElement {
         return nothing;
     }
   }
-  // /@axiom: mock-builder.md#renderowanie-wiadomości
+  // /@axiom: mock-builder.md#wyświetlanie-wiadomości-użytkownika
 
   private isActiveStreaming(): boolean {
     if (this.messages.length === 0) return false;
@@ -698,4 +698,4 @@ export class SmockAiChat extends LitElement {
     }
   }
 }
-// /@axiom: mock-builder.md#komponent-smock-ai-chat
+// /@axiom: mock-builder.md#komponent-ai-chat--smock-ai-chat

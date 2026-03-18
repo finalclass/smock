@@ -40,8 +40,10 @@ let base_url = "/p/" ^ token ^ "/" ^ mock_slug ^ "/f/" in
       <div class_="comment-overlay" id="comment-overlay" />
     </div>
     (* @axiom: comments.md#osadzenie-w-stronie *)
-    (raw (Printf.sprintf {|<smock-comments mock-id="%d" entry-file="%s"></smock-comments>|}
-      mock.id (Html.escape_html mock.entry_file)))
+    (* @axiom: comments.md#blokada-komentarzy-dla-zatwierdzonych-moków *)
+    (raw (Printf.sprintf {|<smock-comments mock-id="%d" entry-file="%s" mock-status="%s"></smock-comments>|}
+      mock.id (Html.escape_html mock.entry_file) (Html.escape_html mock.status)))
+    (* /@axiom: comments.md#blokada-komentarzy-dla-zatwierdzonych-moków *)
     (* /@axiom: comments.md#osadzenie-w-stronie *)
   </div>
 (raw {|</div>|})

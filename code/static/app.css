@@ -261,7 +261,7 @@ a:hover { text-decoration: underline; }
 /* /@axiom: comments.md#synchronizacja-overlay-z-iframe */
 /* /@axiom: client-ui.md#viewer-mocka--layout */
 
-/* @axiom: comments.md#flow-tworzenia-nowego-wątku */
+/* @axiom: comments.md#flow-tworzenia-nowego-wątku-figma-style */
 /* Comments panel */
 .comments-panel {
   width: 320px; border-left: 1px solid var(--border); background: var(--card-bg);
@@ -330,7 +330,7 @@ a:hover { text-decoration: underline; }
   width: 100%; padding: 0.5rem 1rem; font-size: 0.8rem;
   border-radius: var(--radius);
 }
-/* /@axiom: comments.md#flow-tworzenia-nowego-wątku */
+/* /@axiom: comments.md#flow-tworzenia-nowego-wątku-figma-style */
 
 /* @axiom: comments.md#renderowanie-pinów */
 .comment-item {
@@ -437,7 +437,7 @@ live-view.lv-loading { opacity: 0.5; pointer-events: none; }
   z-index: 1;
 }
 .bubble-close-btn:hover { color: var(--fg); background: #f0f0f0; }
-/* /@axiom: comments.md#flow-tworzenia-nowego-wątku */
+/* /@axiom: comments.md#flow-tworzenia-nowego-wątku-figma-style */
 .comment-bubble .bubble-compose-actions,
 .comment-bubble .bubble-reply-actions {
   display: flex; gap: 0.5rem; align-items: center;
@@ -492,7 +492,7 @@ live-view.lv-loading { opacity: 0.5; pointer-events: none; }
   line-height: 1.3;
 }
 .pin-tooltip strong { font-weight: 600; }
-/* /@axiom: comments.md#flow-tworzenia-nowego-wątku */
+/* /@axiom: comments.md#flow-tworzenia-nowego-wątku-figma-style */
 /* /@axiom: comments.md#renderowanie-pinów */
 
 /* @axiom: comments.md#wszystkie-komentarze */

@@ -55,15 +55,23 @@ let run () =
 
   (* @axiom: comments.md#kanał-commentsmockid *)
   Well.Channel.channel
-    ~on_push:(fun req _topic event payload ->
+    ~on_push:(fun req topic event payload ->
       let open Yojson.Safe.Util in
       let to_number j = match j with
         | `Float f -> f | `Int i -> float_of_int i | _ -> 0.0
       in
       let ctx = Well.rpc_ctx req in
+      (* @axiom: comments.md#blokada-komentarzy-dla-zatwierdzonych-moków *)
+      let check_comments_enabled mock_id =
+        let mock = Mock_access.get ~ctx ~id:mock_id in
+        if mock.status = "approved" then
+          failwith "comments_disabled"
+      in
+      (* /@axiom: comments.md#blokada-komentarzy-dla-zatwierdzonych-moków *)
       match event with
       | "create_thread" ->
         let mock_id = payload |> member "mock_id" |> to_int in
+        check_comments_enabled mock_id;
         let page_path = payload |> member "page_path" |> to_string in
         let x_pct = payload |> member "x_pct" |> to_number in
         let y_pct = payload |> member "y_pct" |> to_number in
@@ -74,6 +82,13 @@ let run () =
         { Well.Channel.reply = Some (thread_to_json result);
           broadcast = Some ("thread_created", thread_to_json result) }
       | "add_comment" ->
+        let mock_id_from_topic =
+          let len = String.length "comments:" in
+          if String.length topic > len then
+            try int_of_string (String.sub topic len (String.length topic - len)) with _ -> 0
+          else 0
+        in
+        check_comments_enabled mock_id_from_topic;
         let thread_id = payload |> member "thread_id" |> to_int in
         let author_name = payload |> member "author_name" |> to_string in
         let body = payload |> member "body" |> to_string in
@@ -112,7 +127,7 @@ let run () =
   (* /@axiom: comments.md#kanał-commentsmockid *)
   (* /@axiom: comments.md#serwer--handler-kanału *)
 
-  (* @axiom: mock-builder.md#odświeżanie-podglądu-mocka *)
+  (* @axiom: mock-builder.md#odświeżanie-podglądu *)
   Well.Channel.channel
     ~on_push:(fun _req _topic _event _payload ->
       { Well.Channel.reply = None; broadcast = None })
@@ -121,7 +136,7 @@ let run () =
       Ok { Well.Channel.subscribe = ["mocks:*"];
            initial_state = None }
     ) ;
-  (* /@axiom: mock-builder.md#odświeżanie-podglądu-mocka *)
+  (* /@axiom: mock-builder.md#odświeżanie-podglądu *)
 
   (match Sys.getenv_opt "SMOCK_ADMIN_KEY" with
    | Some password when password <> "" ->

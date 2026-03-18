@@ -1,4 +1,4 @@
-(* @axiom: mock-builder.md#endpoint-aktualizacji-plików-mocka *)
+(* @axiom: mock-builder.md#aktualizacja-plików-mocka *)
 let () =
   Well.post ~middleware:[Api_auth.require_api_key] "/api/projects/:token/mocks/:id/upload" @@ fun req ->
   let ctx = Well.rpc_ctx req in
@@ -24,7 +24,7 @@ let () =
     ("entry_file", `String entry_file);
     ("file_count", `Int count);
   ])
-(* /@axiom: mock-builder.md#endpoint-aktualizacji-plików-mocka *)
+(* /@axiom: mock-builder.md#aktualizacja-plików-mocka *)
 
 (* Helpers for AI proxy endpoints *)
 let ai_access_url () =
@@ -96,7 +96,7 @@ let http_delete ~url ~token =
   Buffer.contents buf
 (* /@axiom: mock-builder.md#endpointy-proxy *)
 
-(* @axiom: mock-builder.md#post-apiprojectsidaisessions *)
+(* @axiom: mock-builder.md#tworzenie-sesji-ai-access *)
 let () =
   Well.post "/api/projects/:id/ai/sessions" @@
   Api_auth.require_auth (fun req ->
@@ -198,9 +198,9 @@ let () =
       ("mockId", `Int mock.id);
     ])
   )
-(* /@axiom: mock-builder.md#post-apiprojectsidaisessions *)
+(* /@axiom: mock-builder.md#tworzenie-sesji-ai-access *)
 
-(* @axiom: mock-builder.md#post-apiprojectsidaisessionssidsend *)
+(* @axiom: mock-builder.md#endpointy-proxy *)
 let () =
   Well.post "/api/projects/:id/ai/sessions/:sid/send" @@
   Api_auth.require_auth (fun req ->
@@ -217,9 +217,9 @@ let () =
     in
     Well.json (Yojson.Safe.from_string response_str)
   )
-(* /@axiom: mock-builder.md#post-apiprojectsidaisessionssidsend *)
+(* /@axiom: mock-builder.md#endpointy-proxy *)
 
-(* @axiom: mock-builder.md#get-apiprojectsidaisessionssidstream *)
+(* @axiom: mock-builder.md#endpointy-proxy *)
 let () =
   Well.get "/api/projects/:id/ai/sessions/:sid/stream" @@
   Api_auth.require_auth (fun req ->
@@ -242,9 +242,9 @@ let () =
     let data = Buffer.contents buf in
     Well.header "Content-Type" "text/event-stream" (Well.text data)
   )
-(* /@axiom: mock-builder.md#get-apiprojectsidaisessionssidstream *)
+(* /@axiom: mock-builder.md#endpointy-proxy *)
 
-(* @axiom: mock-builder.md#get-apiprojectsidaisessionssidmessages *)
+(* @axiom: mock-builder.md#endpointy-proxy *)
 let () =
   Well.get "/api/projects/:id/ai/sessions/:sid/messages" @@
   Api_auth.require_auth (fun req ->
@@ -265,9 +265,9 @@ let () =
     in
     Well.json (Yojson.Safe.from_string response_str)
   )
-(* /@axiom: mock-builder.md#get-apiprojectsidaisessionssidmessages *)
+(* /@axiom: mock-builder.md#endpointy-proxy *)
 
-(* @axiom: mock-builder.md#post-apiprojectsidaisessionssidstop *)
+(* @axiom: mock-builder.md#endpointy-proxy *)
 let () =
   Well.post "/api/projects/:id/ai/sessions/:sid/stop" @@
   Api_auth.require_auth (fun req ->
@@ -284,7 +284,7 @@ let () =
     in
     Well.json (Yojson.Safe.from_string response_str)
   )
-(* /@axiom: mock-builder.md#post-apiprojectsidaisessionssidstop *)
+(* /@axiom: mock-builder.md#endpointy-proxy *)
 
 (* @axiom: mock-builder.md#endpointy-proxy *)
 let () =

@@ -52,6 +52,9 @@ export class SmockComments extends LitElement {
   // @axiom: comments.md#stan-komponentu
   @property({ type: Number, attribute: 'mock-id' }) mockId = 0;
   @property({ type: String, attribute: 'entry-file' }) entryFile = 'index.html';
+  // @axiom: comments.md#blokada-komentarzy-dla-zatwierdzonych-moków
+  @property({ type: String, attribute: 'mock-status' }) mockStatus = '';
+  // /@axiom: comments.md#blokada-komentarzy-dla-zatwierdzonych-moków
 
   @state() pagePath = '';
   @state() threads: Thread[] = [];
@@ -299,11 +302,17 @@ export class SmockComments extends LitElement {
     // @axiom: comments.md#tryb-komentowania-vs-nawigacja
     const commentModeSwitch = document.getElementById('comment-mode-switch');
     if (commentModeSwitch) {
-      commentModeSwitch.querySelectorAll('.comment-mode-opt').forEach(btn => {
-        btn.addEventListener('click', () => {
-          this.setCommentMode((btn as HTMLElement).dataset.mode === 'comment');
+      // @axiom: comments.md#blokada-komentarzy-dla-zatwierdzonych-moków
+      if (this.mockStatus === 'approved') {
+        commentModeSwitch.style.display = 'none';
+      } else {
+        commentModeSwitch.querySelectorAll('.comment-mode-opt').forEach(btn => {
+          btn.addEventListener('click', () => {
+            this.setCommentMode((btn as HTMLElement).dataset.mode === 'comment');
+          });
         });
-      });
+      }
+      // /@axiom: comments.md#blokada-komentarzy-dla-zatwierdzonych-moków
     }
     // /@axiom: comments.md#tryb-komentowania-vs-nawigacja
   }
@@ -399,11 +408,14 @@ export class SmockComments extends LitElement {
 
   // @axiom: comments.md#flow-tworzenia-nowego-wątku-figma-style
   private handleOverlayClick(e: MouseEvent) {
+    // @axiom: comments.md#blokada-komentarzy-dla-zatwierdzonych-moków
+    if (this.mockStatus === 'approved') return;
+    // /@axiom: comments.md#blokada-komentarzy-dla-zatwierdzonych-moków
     const target = e.target as HTMLElement;
     // Don't handle clicks on pins or bubbles
     if (target.classList.contains('comment-pin') || target.closest('.comment-bubble')) return;
 
-    // @axiom: comments.md#flow-tworzenia-nowego-wątku
+    // @axiom: comments.md#flow-tworzenia-nowego-wątku-figma-style
     // If compose or thread bubble is open, close it instead of opening a new one
     if (this.activeCompose || this.openThreadId) {
       this.activeCompose = null;
@@ -411,7 +423,7 @@ export class SmockComments extends LitElement {
       this.renderPins();
       return;
     }
-    // /@axiom: comments.md#flow-tworzenia-nowego-wątku
+    // /@axiom: comments.md#flow-tworzenia-nowego-wątku-figma-style
 
     const overlayW = this.overlay!.offsetWidth;
     const overlayH = this.overlay!.offsetHeight;

@@ -57,7 +57,7 @@ let delete_mock ~ctx ~mock_id =
   Mock_access.delete ~ctx ~id:mock_id
 (* /@axiom: mocks.md#kasowanie-mocka-z-s3 *)
 
-(* @axiom: mock-builder.md#endpoint-aktualizacji-plików-mocka *)
+(* @axiom: mock-builder.md#aktualizacja-plików-mocka *)
 let upload_files ~ctx ~project_id ~mock_id ~(files : (string * string) list) =
   if files = [] then failwith "No files provided";
   let mock = Mock_access.get ~ctx ~id:mock_id in
@@ -92,4 +92,4 @@ let upload_files ~ctx ~project_id ~mock_id ~(files : (string * string) list) =
   ) processed;
   Well.publish Events.mock_event (`MockUploaded (mock_id, mock.name));
   (mock, entry_file, List.length processed)
-(* /@axiom: mock-builder.md#endpoint-aktualizacji-plików-mocka *)
+(* /@axiom: mock-builder.md#aktualizacja-plików-mocka *)
