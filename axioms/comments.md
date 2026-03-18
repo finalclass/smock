@@ -102,6 +102,15 @@ Strona mocka klienta (`client_mock_page.mlx`) osadza komponent jako `<smock-comm
 
 Plik `static/ts/smock-comments.ts` kompilowany przez bun (reguła w `static/dune`). Import Lit bundlowany przez bun. Wynikowy JS: `static/smock-comments.js`, ładowany jako `<script type="module">` na stronie mocka.
 
+## Blokada komentarzy dla zatwierdzonych moków
+
+[e2e] Gdy mock ma status "approved", komentowanie jest zablokowane:
+- Przełącznik trybów (Nawiguj/Komentuj) jest ukryty
+- Overlay nie przechwytuje kliknięć (tryb komentowania niedostępny)
+- Serwer odrzuca komendy `create_thread` i `add_comment` z błędem "comments_disabled" jeśli mock ma status "approved"
+- Istniejące komentarze pozostają widoczne (read-only)
+- Komponent otrzymuje status mocka przez atrybut `mock-status`
+
 ## Walidacja
 
 [e2e] Użytkownik może dodać komentarz (wątek) na jednej stronie, następnie przejść na drugą stronę, kliknąć we "wszystkie komentarze" i wybrać wątek, który wcześniej stworzył - kliknąć w niego i w tym momencie zostaje przeniesiony do strony z tym wątkiem. Ekran jest też przescrollowany do miejsca gdzie pin został postawiony.
