@@ -6,7 +6,7 @@
 
 #### Workflow uploadu mocka
 [test]
-Upload mocka (MockManager.upload_mock): (1) walidacja — nazwa niepusta, lista plików niepusta, (2) generowanie sluga z nazwy, (3) wyznaczenie entry_file — priorytet: index.html > pierwszy HTML (nie layout.html) > pierwszy plik, (4) tworzenie rekordu mocka w bazie (status: "draft"), (5) przetwarzanie szablonów (Template_processor.process), (6) zapis każdego przetworzonego pliku na S3 + rejestracja w mock_files, (7) publikacja eventu MockUploaded.
+Upload mocka (MockManager.upload_mock): (1) walidacja — nazwa niepusta, lista plików niepusta, (2) generowanie sluga z nazwy, (3) wyznaczenie entry_file — priorytet: index.html > pierwszy HTML (nie layout.html) > pierwszy plik, (4) sprawdzenie czy mock o tym slugu już istnieje w projekcie (get_by_slug) — jeśli tak: nadpisanie plików istniejącego mocka (kasuj stare pliki z S3 i mock_files, zachowaj rekord mocka i jego komentarze/wątki), jeśli nie: tworzenie nowego rekordu mocka (status: "draft"), (5) przetwarzanie szablonów (Template_processor.process), (6) zapis każdego przetworzonego pliku na S3 + rejestracja w mock_files, (7) aktualizacja updated_at, (8) publikacja eventu MockUploaded.
 
 #### Template processing — system layoutów
 [test]
@@ -42,4 +42,4 @@ Endpoint GET /p/:token/:mock_slug/f/*path serwuje pliki mocka z S3. Rozwiązuje 
 
 #### MockAccess — warstwa dostępu do SQLite
 [test]
-Implementacja MockAccess (mock_access_impl.ml) używa `[@@deriving table]` dla tabel mocks i mock_files. Moduł Impl implementuje Mock_access.IMPL. Operacje: list_by_project (SELECT ORDER BY id DESC), get (SELECT WHERE id), get_by_slug (SELECT WHERE project_id AND slug), create (INSERT z timestampem, ai_session_id domyślnie ""), update_status (UPDATE SET status, updated_at), set_ai_session (UPDATE SET ai_session_id WHERE id), delete (DELETE mock_files + DELETE mock), add_file (INSERT do mock_files), list_files (SELECT WHERE mock_id ORDER BY path).
+Implementacja MockAccess (mock_access_impl.ml) używa `[@@deriving table]` dla tabel mocks i mock_files. Moduł Impl implementuje Mock_access.IMPL. Operacje: list_by_project (SELECT ORDER BY id DESC), get (SELECT WHERE id), get_by_slug (SELECT WHERE project_id AND slug ORDER BY id DESC LIMIT 1 — zawsze najnowszy mock), create (INSERT z timestampem, ai_session_id domyślnie ""), update_status (UPDATE SET status, updated_at), set_ai_session (UPDATE SET ai_session_id WHERE id), delete (DELETE mock_files + DELETE mock), add_file (INSERT do mock_files), list_files (SELECT WHERE mock_id ORDER BY path).
