@@ -16,8 +16,20 @@ let upload_mock ~ctx ~project_id ~name ~(files : (string * string) list) =
       | (p, _) :: _ -> p
       | [] -> fst (List.hd files)
   in
-  (* Create mock record *)
-  let mock = Mock_access.create ~ctx ~project_id ~name ~slug ~entry_file in
+  (* Check if mock with same slug already exists in project *)
+  let mock =
+    match (try Some (Mock_access.get_by_slug ~ctx ~project_id ~slug) with Failure _ -> None) with
+    | Some existing ->
+      (* Overwrite: delete old files from S3 and mock_files, keep mock record and comments *)
+      let old_files = Mock_access.list_files ~ctx ~id:existing.id in
+      let old_paths = List.map (fun (f : Mock_access.MockFile.t) -> f.path) old_files.files in
+      S3_storage.delete_mock_files ~project_id ~mock_id:existing.id old_paths;
+      Mock_access_impl.clear_files ~mock_id:existing.id;
+      existing
+    | None ->
+      (* Create new mock record *)
+      Mock_access.create ~ctx ~project_id ~name ~slug ~entry_file
+  in
   (* Process templates *)
   let processed = Template_processor.process files in
   (* Store files on S3 and register in DB *)

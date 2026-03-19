@@ -1,6 +1,6 @@
 (* @axiom: mock-builder.md#aktualizacja-plików-mocka *)
 let () =
-  Well.post ~middleware:[Api_auth.require_api_key] "/api/projects/:token/mocks/:id/upload" @@ fun req ->
+  Well.put ~middleware:[Api_auth.require_api_key] "/api/projects/:token/mocks/:slug/files" @@ fun req ->
   let ctx = Well.rpc_ctx req in
   let token = Well.param req "token" in
   let project = Project_access.get_by_token ~ctx ~token in
@@ -8,16 +8,17 @@ let () =
   (match caller_project with
    | Some p when p.user_id = project.user_id -> ()
    | _ -> failwith "Access denied");
-  let mock_id = int_of_string (Well.param req "id") in
+  let slug = Well.param req "slug" in
+  let mock = Mock_access.get_by_slug ~ctx ~project_id:project.id ~slug in
   let uploaded = Well.all_files req in
   let files = List.map (fun (_field, (f : Well.uploaded_file)) ->
     (f.filename, f.data)
   ) uploaded in
-  let (mock, entry_file, count) =
-    Mock_manager_impl.upload_files ~ctx ~project_id:project.id ~mock_id ~files
+  let (_mock, entry_file, count) =
+    Mock_manager_impl.upload_files ~ctx ~project_id:project.id ~mock_id:mock.id ~files
   in
   Well.json (`Assoc [
-    ("id", `Int mock_id);
+    ("id", `Int mock.id);
     ("name", `String mock.name);
     ("slug", `String mock.slug);
     ("status", `String mock.status);
@@ -159,9 +160,9 @@ let () =
        ```\n\n\
        ## Aktualizacja istniejącego mocka\n\
        ```\n\
-       curl -X POST \"%s/api/projects/%s/mocks/%d/upload\" \\\n\
+       curl -X PUT \"%s/api/projects/%s/mocks/%s/files\" \\\n\
          -H \"Authorization: Bearer %s\" \\\n\
-         -F \"files[]=@index.html;filename=index.html\"\n\
+         -F \"file=@index.html;filename=index.html\"\n\
        ```\n\n\
        ## Zasady\n\
        - Generuj responsywny HTML\n\
@@ -172,7 +173,7 @@ let () =
       smock_url
       project.token project.api_key
       smock_url project.token project.api_key
-      smock_url project.token mock.id project.api_key
+      smock_url project.token mock.slug project.api_key
       files_context in
     (* Create session at ai-access *)
     let ai_url = ai_access_url () in

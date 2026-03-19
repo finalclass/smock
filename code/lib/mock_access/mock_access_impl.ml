@@ -25,7 +25,7 @@ type mock_file_row = {
 (* @axiom: mocks.md#mockaccess--warstwa-dostępu-do-sqlite *)
 let%query all_mocks_by_project = "SELECT id, project_id, name, slug, status, entry_file, ai_session_id, created_at, updated_at FROM mocks WHERE project_id = :project_id ORDER BY id DESC"
 let%query find_mock = "SELECT id, project_id, name, slug, status, entry_file, ai_session_id, created_at, updated_at FROM mocks WHERE id = :id"
-let%query find_mock_by_slug = "SELECT id, project_id, name, slug, status, entry_file, ai_session_id, created_at, updated_at FROM mocks WHERE project_id = :project_id AND slug = :slug"
+let%query find_mock_by_slug = "SELECT id, project_id, name, slug, status, entry_file, ai_session_id, created_at, updated_at FROM mocks WHERE project_id = :project_id AND slug = :slug ORDER BY id DESC LIMIT 1"
 let%query insert_mock = "INSERT INTO mocks (project_id, name, slug, status, entry_file, ai_session_id, created_at, updated_at) VALUES (:project_id, :name, :slug, :status, :entry_file, :ai_session_id, :created_at, :updated_at)"
 let%query update_mock_status = "UPDATE mocks SET status = :status, updated_at = :updated_at WHERE id = :id"
 let%query update_mock_ai_session = "UPDATE mocks SET ai_session_id = :ai_session_id WHERE id = :id"

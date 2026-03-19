@@ -227,6 +227,39 @@ let () =
       );
     );
 
+    describe "upload_mock overwrites existing mock by slug" (fun () ->
+      it "reuses existing mock record when slug matches" (fun () ->
+        setup_services ();
+        let ctx = test_ctx () in
+        let project = Project_access.create ~ctx ~name:"Overwrite Test" ~user_id:1 in
+        (* First upload — creates new mock *)
+        let mock1 = Mock_access.create ~ctx ~project_id:project.id ~name:"Landing" ~slug:"landing" ~entry_file:"index.html" in
+        ignore (Mock_access.add_file ~ctx ~mock_id:mock1.id ~path:"index.html" ~content_type:"text/html" ~size:10);
+        (* Second upload with same slug via get_by_slug should find the existing mock *)
+        let found = Mock_access.get_by_slug ~ctx ~project_id:project.id ~slug:"landing" in
+        expect (found.id) |> to_equal_int mock1.id;
+        (* Cleanup *)
+        ignore (Mock_access.delete ~ctx ~id:mock1.id);
+        ignore (Project_access.delete ~ctx ~id:project.id)
+      );
+    );
+
+    describe "get_by_slug returns newest mock" (fun () ->
+      it "returns the mock with highest id when multiple have same slug" (fun () ->
+        setup_services ();
+        let ctx = test_ctx () in
+        let project = Project_access.create ~ctx ~name:"Slug Test" ~user_id:1 in
+        let mock1 = Mock_access.create ~ctx ~project_id:project.id ~name:"Page" ~slug:"page" ~entry_file:"index.html" in
+        let mock2 = Mock_access.create ~ctx ~project_id:project.id ~name:"Page v2" ~slug:"page" ~entry_file:"index.html" in
+        let found = Mock_access.get_by_slug ~ctx ~project_id:project.id ~slug:"page" in
+        expect (found.id) |> to_equal_int mock2.id;
+        (* Cleanup *)
+        ignore (Mock_access.delete ~ctx ~id:mock1.id);
+        ignore (Mock_access.delete ~ctx ~id:mock2.id);
+        ignore (Project_access.delete ~ctx ~id:project.id)
+      );
+    );
+
     (* @axiom: comment-access.md#commentaccess *)
     describe "CommentAccess integration" (fun () ->
       it "creates a thread with first comment" (fun () ->
